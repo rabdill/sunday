@@ -1,0 +1,49 @@
+{% extends "portal/base.html" %}
+{% block title %}Cast — {{ site_title }}{% endblock %}
+
+{#
+  Every name the corpus uses, across all three kinds. Tags appear here on equal
+  footing for naming consistency (FR-032/032b) — a misspelled tag is as detectable
+  as a misspelled character — even though they never gain a profile.
+#}
+{% block content %}
+<h1>Cast</h1>
+<p class="muted">
+  Every character, location, and tag the stories name. A name exists because a story
+  uses it — nothing here needs registering.
+</p>
+
+{% for kind in kinds %}
+{% set group = rows | selectattr('name.kind', 'equalto', kind) | list %}
+{% if group %}
+<section class="panel">
+  <h2>{{ kind }}s</h2>
+  <ul class="rows">
+    {% for row in group %}
+    <li class="row">
+      <span class="row-main">
+        <a href="{{ url_for('cast.show', kind=kind, slug=row.name.slug) }}">{{ row.name.display }}</a>
+        {% if row.subject and row.subject.has_profile %}
+        <span class="tag-chip chip-ok">profiled</span>
+        {% elif kind != 'tag' and not (row.subject and row.subject.dismissed) %}
+        <span class="tag-chip">no profile</span>
+        {% endif %}
+        {% for finding in row.findings %}
+          {% if finding.kind == 'probable_duplicate' and finding.other %}
+          <span class="tag-chip chip-warn"
+                title="{{ finding.detail }}">looks like “{{ finding.other.display }}”</span>
+          {% elif finding.kind == 'orphaned_profile' %}
+          <span class="tag-chip chip-warn">orphaned profile</span>
+          {% endif %}
+        {% endfor %}
+      </span>
+      <span class="row-meta">
+        {{ row.uses }} stor{{ "y" if row.uses == 1 else "ies" }}{% if row.uses == 1 %} — often a typo{% endif %}
+      </span>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+{% endfor %}
+{% endblock %}

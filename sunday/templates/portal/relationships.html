@@ -1,0 +1,76 @@
+{% extends "portal/base.html" %}
+{% block title %}Relationships — {{ site_title }}{% endblock %}
+
+{% block content %}
+<h1>Relationships</h1>
+<p class="muted">
+  What is true of the world, whether or not a story has said it yet. These reach the
+  published diagram as their own kind of connection — never merged with the fact that
+  two characters happen to appear together.
+</p>
+
+<section class="panel">
+  <h2>Recorded</h2>
+  {% if relationships %}
+  {% for rel in relationships %}
+  <form method="post" action="{{ url_for('relationships.update', relationship_id=rel.id) }}">
+    <div class="row">
+      <span class="row-main">
+        <strong>{{ rel.from_subject.name }}</strong>
+        {{ "→" if rel.directed else "↔" }}
+        <strong>{{ rel.to_subject.name }}</strong>
+      </span>
+    </div>
+    <label for="description-{{ rel.id }}">Nature of the connection</label>
+    <input type="text" id="description-{{ rel.id }}" name="description" value="{{ rel.description }}">
+    <label class="checkbox">
+      <input type="checkbox" name="directed" {% if rel.directed %}checked{% endif %}>
+      One-way — the connection runs from the first to the second
+    </label>
+    <div class="actions">
+      <button type="submit">Update</button>
+      <button type="submit" name="delete" value="1" class="danger">Delete</button>
+    </div>
+  </form>
+  <hr>
+  {% endfor %}
+  {% else %}
+  <p class="muted">Nothing recorded yet.</p>
+  {% endif %}
+</section>
+
+<section class="panel">
+  <h2>Record a relationship</h2>
+  {% if characters | length < 2 %}
+  <p class="muted">At least two characters need to exist first.</p>
+  {% else %}
+  <form method="post" action="{{ url_for('relationships.create') }}">
+    <label for="from_subject">From</label>
+    <select id="from_subject" name="from_subject" required>
+      {% for character in characters %}
+      <option value="{{ character.id }}">{{ character.name }}</option>
+      {% endfor %}
+    </select>
+
+    <label for="description">Nature of the connection
+      <span class="hint">“sister”, “betrayed”, “taught” — whatever it is.</span>
+    </label>
+    <input type="text" id="description" name="description" placeholder="sister">
+
+    <label for="to_subject">To</label>
+    <select id="to_subject" name="to_subject" required>
+      {% for character in characters %}
+      <option value="{{ character.id }}">{{ character.name }}</option>
+      {% endfor %}
+    </select>
+
+    <label class="checkbox">
+      <input type="checkbox" name="directed">
+      One-way — the connection runs from the first to the second
+    </label>
+
+    <div class="actions"><button type="submit">Record it</button></div>
+  </form>
+  {% endif %}
+</section>
+{% endblock %}

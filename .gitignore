@@ -1,0 +1,27 @@
+# Generated site — rebuilt from committed files, never committed.
+site/
+
+# Local authoring store. Gitignored by design (FR-040): disposable, rebuildable.
+.sunday/
+
+# Local tooling: Spec Kit scaffolding and Claude Code skill definitions.
+# The specs themselves live in specs/ and are committed; this is the machinery
+# that produced them.
+.specify/
+.claude/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+dist/
+build/
+.pytest_cache/
+
+# Universal
+.DS_Store
+*.swp
+.idea/
+.vscode/

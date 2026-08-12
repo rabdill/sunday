@@ -1,0 +1,45 @@
+{% extends "portal/base.html" %}
+{% block title %}Stories — {{ site_title }}{% endblock %}
+
+{% block content %}
+<h1>Stories</h1>
+<p><a href="{{ url_for('stories.new') }}">Write a new story</a></p>
+
+{% if vanished %}
+<div class="callout callout-warn">
+  <p><strong>Files that have gone missing.</strong>
+    The portal knew these stories, but their files are no longer on disk — deleted or
+    renamed elsewhere. Nothing has been assumed about them.</p>
+  <ul class="rows">
+    {% for state in vanished %}
+    <li class="row">
+      <span class="row-main">{{ state.slug }}</span>
+      <span class="row-meta">
+        <form method="post" class="inline" action="{{ url_for('stories.forget', slug=state.slug) }}">
+          <button type="submit" class="secondary">Forget it</button>
+        </form>
+      </span>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+<ul class="rows">
+  {% for story in stories %}
+  {% set state = states.get(story.slug) %}
+  <li class="row">
+    <span class="row-main">
+      <a href="{{ url_for('stories.edit', slug=story.slug) }}">{{ story.title }}</a>
+      {% if story.draft %}<span class="tag-chip">draft</span>{% endif %}
+      {% if state and state.state.value == 'diverged' %}
+      <a class="tag-chip chip-warn" href="{{ url_for('stories.conflict', slug=story.slug) }}">conflict</a>
+      {% endif %}
+    </span>
+    <span class="row-meta">{{ story.published }}</span>
+  </li>
+  {% else %}
+  <li class="row"><span class="row-main muted">No stories yet.</span></li>
+  {% endfor %}
+</ul>
+{% endblock %}

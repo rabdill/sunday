@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}{{ site_title }} — authoring{% endblock %}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='portal.css') }}">
+{% block head %}{% endblock %}
+</head>
+<body>
+<header class="bar">
+  <p class="wordmark"><a href="{{ url_for('dashboard.index') }}">{{ site_title }}</a>
+    <span class="badge">authoring</span></p>
+  <nav>
+    <a href="{{ url_for('dashboard.index') }}">Dashboard</a>
+    {% if has_stories %}<a href="{{ url_for('stories.index') }}">Stories</a>{% endif %}
+    {% if has_cast %}<a href="{{ url_for('cast.index') }}">Cast</a>{% endif %}
+    {% if has_cast %}<a href="{{ url_for('cast.review') }}">Review</a>{% endif %}
+    {% if has_relationships %}<a href="{{ url_for('relationships.index') }}">Relationships</a>{% endif %}
+    <form method="post" action="{{ url_for('build.run_build') }}" class="inline">
+      <button type="submit">Build</button>
+    </form>
+  </nav>
+</header>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  <div class="flashes">
+    {% for category, message in messages %}
+    <p class="flash flash-{{ category }}">{{ message }}</p>
+    {% endfor %}
+  </div>
+  {% endif %}
+{% endwith %}
+
+<main>
+{% block content %}{% endblock %}
+</main>
+
+<footer class="colophon">
+  <p>Local authoring tool. Nothing here is published unless it reaches a story file.</p>
+</footer>
+{% block scripts %}{% endblock %}
+</body>
+</html>

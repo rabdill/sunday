@@ -1,0 +1,39 @@
+{#
+  Notes panel, included by the story form and the cast page.
+
+  Expects `notes`, plus `note_target_kind` and `note_target_ref` identifying what
+  the note attaches to.
+#}
+{% set target_kind = note_target_kind | default('subject') %}
+{% set target_ref = note_target_ref | default(name.kind ~ '/' ~ name.slug if name is defined else '') %}
+
+<section class="panel">
+  <h2>Notes</h2>
+  <p class="muted">
+    Private to this tool. Never exported, never published — and the one thing a store
+    rebuild cannot recover.
+  </p>
+
+  {% for note in notes %}
+  <form method="post" action="{{ url_for('notes.update', note_id=note.id) }}">
+    <input type="hidden" name="target_ref" value="{{ target_ref }}">
+    <textarea name="body" class="short">{{ note.body }}</textarea>
+    <div class="actions">
+      <button type="submit">Update</button>
+      <button type="submit" name="delete" value="1" class="danger">Delete</button>
+      <span class="row-meta">{{ note.updated_at }}</span>
+    </div>
+  </form>
+  {% else %}
+  <p class="muted">No notes yet.</p>
+  {% endfor %}
+
+  <form method="post" action="{{ url_for('notes.create') }}">
+    <input type="hidden" name="target_kind" value="{{ target_kind }}">
+    <input type="hidden" name="target_ref" value="{{ target_ref }}">
+    <label for="new-note">Add a note</label>
+    <textarea id="new-note" name="body" class="short"
+              placeholder="Something true of them that no story has said yet."></textarea>
+    <div class="actions"><button type="submit">Save note</button></div>
+  </form>
+</section>

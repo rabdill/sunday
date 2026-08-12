@@ -1,0 +1,46 @@
+{% extends "portal/base.html" %}
+{% block title %}Build — {{ site_title }}{% endblock %}
+
+{#
+  A failure has to be legible here, not only on a terminal (FR-034) — the author
+  is in the browser, and that is where the answer belongs.
+#}
+{% block content %}
+<h1>Local build</h1>
+
+{% if outcome.ok %}
+<div class="callout callout-ok">
+  <p><strong>Build succeeded.</strong> {{ outcome.pages }} pages generated.</p>
+  <p><a href="{{ url_for('build.build_output') }}">Browse the generated site</a></p>
+</div>
+
+{% if outcome.warnings %}
+<section class="panel">
+  <h2>Warnings</h2>
+  <p class="muted">
+    Naming findings never block publication — the site above was generated and would
+    publish exactly as it is.
+  </p>
+  <ul class="rows">
+    {% for warning in outcome.warnings %}
+    <li class="row"><span class="row-main">{{ warning }}</span></li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+{% else %}
+<div class="callout callout-error">
+  <p><strong>Build failed.</strong> Nothing was published.</p>
+  <pre class="error-detail">{{ outcome.error }}</pre>
+</div>
+<p class="muted">
+  Structural problems stop a build on purpose: publishing a story with missing or
+  unreadable metadata would put something quietly wrong in front of readers.
+</p>
+{% endif %}
+
+<form method="post" action="{{ url_for('build.run_build') }}">
+  <button type="submit">Build again</button>
+</form>
+{% endblock %}

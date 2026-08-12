@@ -1,0 +1,11 @@
+cytoscape.min.js — Cytoscape.js 3.30.2
+Source: https://unpkg.com/cytoscape@3.30.2/dist/cytoscape.min.js
+Vendored: 2026-08-11
+License: MIT (Copyright (c) 2016-2024, The Cytoscape Consortium)
+
+Vendored rather than loaded from a CDN so the published site is self-contained and
+makes no third-party requests at page load. Used by both the published network
+diagram and the portal's per-character diagram.
+
+To update: replace the file from the same URL with a new version number, and
+update this file. There is no build step.

@@ -1,0 +1,94 @@
+{% extends "portal/base.html" %}
+{% block title %}Review — {{ site_title }}{% endblock %}
+
+{% block content %}
+<h1>Review</h1>
+<p class="muted">
+  Every naming finding in one place. None of these blocks a build — a publication step
+  that refused to publish over a spelling question would be the wrong shape for this.
+</p>
+
+{% set duplicates = findings | selectattr('kind', 'equalto', 'probable_duplicate') | list %}
+{% set orphans = findings | selectattr('kind', 'equalto', 'orphaned_profile') | list %}
+{% set singles = findings | selectattr('kind', 'equalto', 'single_use') | list %}
+{% set unprofiled = findings | selectattr('kind', 'equalto', 'unprofiled_name') | list %}
+
+<section class="panel">
+  <h2>Probable duplicates</h2>
+  {% if duplicates %}
+  <ul class="rows">
+    {% for finding in duplicates %}
+    <li class="row">
+      <span class="row-main">
+        <a href="{{ url_for('cast.show', kind=finding.name.kind, slug=finding.name.slug) }}">{{ finding.name.display }}</a>
+        and
+        <a href="{{ url_for('cast.show', kind=finding.other.kind, slug=finding.other.slug) }}">{{ finding.other.display }}</a>
+        <span class="tag-chip">{{ finding.name.kind }}</span>
+      </span>
+      <span class="row-meta">{{ finding.detail }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="muted">Nothing looks misspelled.</p>
+  {% endif %}
+</section>
+
+<section class="panel">
+  <h2>Orphaned profiles</h2>
+  {% if orphans %}
+  <ul class="rows">
+    {% for finding in orphans %}
+    <li class="row"><span class="row-main">{{ finding.name.display }}</span>
+      <span class="row-meta">{{ finding.detail }}</span></li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="muted">Every profile describes a name in use.</p>
+  {% endif %}
+</section>
+
+<section class="panel">
+  <h2>Used once</h2>
+  <p class="muted">Not a problem in itself — but a single use is the usual shape of a typo.</p>
+  {% if singles %}
+  <ul class="rows">
+    {% for finding in singles %}
+    <li class="row">
+      <span class="row-main">
+        <a href="{{ url_for('cast.show', kind=finding.name.kind, slug=finding.name.slug) }}">{{ finding.name.display }}</a>
+        <span class="tag-chip">{{ finding.name.kind }}</span>
+      </span>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="muted">Every name is used more than once.</p>
+  {% endif %}
+</section>
+
+<section class="panel">
+  <h2>Not yet profiled</h2>
+  <p class="muted">Suggestions, not obligations. Declining one is remembered.</p>
+  {% if unprofiled %}
+  <ul class="rows">
+    {% for finding in unprofiled %}
+    <li class="row">
+      <span class="row-main">
+        <a href="{{ url_for('cast.show', kind=finding.name.kind, slug=finding.name.slug) }}">{{ finding.name.display }}</a>
+        <span class="tag-chip">{{ finding.name.kind }}</span>
+      </span>
+      <span class="row-meta">
+        <form method="post" class="inline"
+              action="{{ url_for('cast.dismiss', kind=finding.name.kind, slug=finding.name.slug) }}">
+          <button type="submit" class="secondary">Dismiss</button>
+        </form>
+      </span>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="muted">Nothing awaiting review.</p>
+  {% endif %}
+</section>
+{% endblock %}

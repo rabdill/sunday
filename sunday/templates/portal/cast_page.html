@@ -1,0 +1,158 @@
+{% extends "portal/base.html" %}
+{% block title %}{{ name.display }} — {{ site_title }}{% endblock %}
+
+{#
+  Everything known about one subject, in one place (FR-057) — and never generated
+  into the published site (FR-053).
+
+  A tag's page is deliberately the thinnest thing this template renders: a story
+  list, and nothing else. No profile, relationships, diagram, or notes, because
+  none of those concepts apply to a tag (FR-053b).
+#}
+{% block content %}
+<h1>{{ name.display }}</h1>
+<p class="muted">
+  {{ name.kind }}{% if not is_tag and subject and subject.display_name %} —
+  shown on the diagram as “{{ subject.display_name }}”{% endif %}
+</p>
+
+{% if not is_tag and subject and subject.description %}
+<section class="panel">
+  <h2>Profile</h2>
+  <p>{{ subject.description }}</p>
+</section>
+{% endif %}
+
+<section class="panel">
+  <h2>Stories</h2>
+  {% if stories %}
+  <ul class="rows">
+    {% for story in stories %}
+    <li class="row">
+      <span class="row-main">
+        <a href="{{ url_for('stories.edit', slug=story.slug) }}">{{ story.title }}</a>
+        {% if story.draft %}<span class="tag-chip">draft</span>{% endif %}
+      </span>
+      <span class="row-meta">{{ story.published }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="muted">No stories reference this name.</p>
+  {% endif %}
+</section>
+
+{% if not is_tag %}
+<section class="panel">
+  <h2>From the stories</h2>
+  <p class="muted">Derived from the corpus — not something you maintain by hand.</p>
+  <ul class="rows">
+    <li class="row">
+      <span class="row-main">Locations</span>
+      <span class="row-meta">
+        {% for location in context.locations %}
+        <a href="{{ url_for('cast.show', kind='location', slug=location.slug) }}">{{ location.display }}</a>{% if not loop.last %}, {% endif %}
+        {% else %}none{% endfor %}
+      </span>
+    </li>
+    <li class="row">
+      <span class="row-main">Appears alongside</span>
+      <span class="row-meta">
+        {% for other in context.co_appearing %}
+        <a href="{{ url_for('cast.show', kind=other.kind, slug=other.slug) }}">{{ other.display }}</a>{% if not loop.last %}, {% endif %}
+        {% else %}nobody{% endfor %}
+      </span>
+    </li>
+    <li class="row">
+      <span class="row-main">First appearance</span>
+      <span class="row-meta">{{ context.first_appearance.title if context.first_appearance else "—" }}</span>
+    </li>
+    <li class="row">
+      <span class="row-main">Last appearance</span>
+      <span class="row-meta">{{ context.last_appearance.title if context.last_appearance else "—" }}</span>
+    </li>
+  </ul>
+</section>
+
+<section class="panel">
+  <h2>Relationships</h2>
+  {% if relationships %}
+  <ul class="rows">
+    {% for rel in relationships %}
+    <li class="row">
+      <span class="row-main">
+        {% if rel.from_subject.id == subject.id %}
+          {{ rel.description or "connected to" }} →
+          <strong>{{ rel.to_subject.name }}</strong>
+        {% else %}
+          <strong>{{ rel.from_subject.name }}</strong>
+          → {{ rel.description or "connected to" }}
+        {% endif %}
+      </span>
+      <span class="row-meta">{{ "directed" if rel.directed else "mutual" }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="muted">No relationships recorded. These are things you state, not things the stories imply.</p>
+  {% endif %}
+  {% if has_relationships %}
+  <p><a href="{{ url_for('relationships.index') }}">Record a relationship</a></p>
+  {% endif %}
+</section>
+
+<section class="panel">
+  <h2>Diagram</h2>
+  {% if graph_is_empty %}
+  <p class="muted">
+    Nothing to draw yet — this {{ name.kind }} has no co-appearances and no stated
+    relationships.
+  </p>
+  {% else %}
+  <div id="network" data-graph-inline="{{ graph_json }}" data-root="/"></div>
+  {% endif %}
+</section>
+
+{% if has_notes %}
+{% include "portal/_notes.html" with context %}
+{% endif %}
+
+<section class="panel">
+  <h2>Profile</h2>
+  <form method="post" action="{{ url_for('cast.save_profile', kind=name.kind, slug=name.slug) }}">
+    <label for="display_name">Display name
+      <span class="hint">Optional. Overrides the diagram label only — stories still use “{{ name.display }}”.</span>
+    </label>
+    <input type="text" id="display_name" name="display_name"
+           value="{{ subject.display_name or '' if subject else '' }}">
+
+    <label for="description">Description
+      <span class="hint">Stays in the store. Never exported, never published.</span>
+    </label>
+    <textarea id="description" name="description" class="short">{{ subject.description or '' if subject else '' }}</textarea>
+
+    <div class="actions"><button type="submit">Save profile</button></div>
+  </form>
+</section>
+{% endif %}
+
+<section class="panel">
+  <h2>Rename</h2>
+  <p class="muted">
+    Rewrites every story that references “{{ name.display }}”, leaving no occurrence of
+    the old name.{% if not is_tag %} Notes and relationships follow along.{% endif %}
+  </p>
+  <form method="post" action="{{ url_for('cast.rename', kind=name.kind, slug=name.slug) }}">
+    <label for="new_name">New name</label>
+    <input type="text" id="new_name" name="new_name" value="{{ name.display }}" required>
+    <div class="actions"><button type="submit">Rename across the corpus</button></div>
+  </form>
+</section>
+{% endblock %}
+
+{% block scripts %}
+{% if not is_tag and not graph_is_empty %}
+<script src="{{ url_for('static', filename='vendor/cytoscape.min.js') }}"></script>
+<script src="{{ url_for('static', filename='network.js') }}" defer></script>
+{% endif %}
+{% endblock %}

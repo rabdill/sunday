@@ -1,0 +1,85 @@
+{% extends "portal/base.html" %}
+{% block title %}{{ "New story" if is_new else values.title }} — {{ site_title }}{% endblock %}
+
+{% block content %}
+<h1>{{ "New story" if is_new else "Edit story" }}</h1>
+
+{% if problems %}
+<div class="callout callout-error">
+  <p><strong>Not saved.</strong> Nothing was written to disk.</p>
+  <ul>
+    {% for problem in problems %}<li>{{ problem }}</li>{% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+<form method="post" action="{{ url_for('stories.save', slug=values.slug or 'new') }}">
+  <label for="title">Title</label>
+  <input type="text" id="title" name="title" value="{{ values.title }}" required>
+
+  <label for="slug">Slug
+    <span class="hint">The story's permanent address. Changing the title never changes this.</span>
+  </label>
+  <input type="text" id="slug" name="slug" value="{{ values.slug }}" pattern="[a-z0-9-]+" required>
+
+  <label for="published">Published
+    <span class="hint">When it was released. Orders the feed.</span>
+  </label>
+  <input type="date" id="published" name="published" value="{{ values.published }}" required>
+
+  <label for="occurs">In-world date
+    <span class="hint">When it happens in the fiction. <code>1921</code>, <code>1921-03</code>,
+      or <code>1921-03-04</code> — leave empty if it is not placed yet.</span>
+  </label>
+  <input type="text" id="occurs" name="occurs" value="{{ values.occurs }}"
+         placeholder="1921-03" list="occurs-hints">
+
+  {% for kind, label, hint in [
+      ('characters', 'Characters', 'One per line. A new name needs no registration.'),
+      ('locations', 'Locations', 'One per line.'),
+      ('tags', 'Tags', 'One per line. Not published, but kept consistent.')] %}
+  <label for="{{ kind }}">{{ label }}
+    <span class="hint">{{ hint }}</span>
+  </label>
+  <textarea id="{{ kind }}" name="{{ kind }}" class="short"
+            list="{{ kind }}-suggestions">{{ values[kind] }}</textarea>
+  <datalist id="{{ kind }}-suggestions">
+    {% for suggestion in suggestions[kind[:-1] if kind != 'tags' else 'tag'] %}
+    <option value="{{ suggestion }}"></option>
+    {% endfor %}
+  </datalist>
+  {% endfor %}
+
+  <label class="checkbox">
+    <input type="checkbox" name="draft" {% if values.draft %}checked{% endif %}>
+    Draft — excluded from the published site entirely
+  </label>
+
+  <label for="body">Body</label>
+  <textarea id="body" name="body" required>{{ values.body }}</textarea>
+
+  <div class="actions">
+    <button type="submit">Save</button>
+    {% if not is_new %}
+    <a href="{{ url_for('stories.index') }}">Back to stories</a>
+    {% endif %}
+  </div>
+</form>
+
+{% if not is_new and has_notes %}
+{% include "portal/_notes.html" with context %}
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+/* Offer names already in the corpus as you type, without preventing a new one. */
+document.querySelectorAll("textarea[list]").forEach(function (area) {
+  var listId = area.getAttribute("list");
+  var list = document.getElementById(listId);
+  if (!list) return;
+  var names = Array.prototype.map.call(list.options, function (o) { return o.value; });
+  area.setAttribute("title", "Already in use: " + names.join(", "));
+});
+</script>
+{% endblock %}

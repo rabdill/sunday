@@ -1,0 +1,40 @@
+{% extends "site/base.html" %}
+{# The feed: the whole published collection, newest first.
+
+   Every story is in this markup unconditionally. `feed-filter.js` hides the
+   non-matching items from the query string, so a reader without JavaScript gets
+   the complete collection rather than an empty page (FR-011b). The banner and the
+   empty-state start hidden for the same reason. #}
+
+{% block content %}
+<div class="filter-banner" id="feed-filter-banner" hidden>
+  <p>Showing stories with <strong id="feed-filter-label"></strong>.
+    <a href="{{ root }}" id="feed-filter-clear">Show everything</a></p>
+</div>
+
+<p class="filter-empty" id="feed-filter-empty" hidden>No published story carries that name yet.</p>
+
+{% if items %}
+<ul class="feed" id="feed">
+  {% for item in items %}
+  <li class="feed-item"
+      data-characters="{{ item.character_slugs }}"
+      data-locations="{{ item.location_slugs }}">
+    <h2><a href="{{ root }}stories/{{ item.story.slug }}/">{{ item.story.title }}</a></h2>
+    <p class="dates">
+      <span class="published">{{ item.published_display }}</span>
+      {% if item.occurs_display %}
+      <span class="occurs">{{ item.occurs_display }}</span>
+      {% endif %}
+    </p>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<p>No stories published yet.</p>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ root }}feed-filter.js" defer></script>
+{% endblock %}

@@ -1,0 +1,32 @@
+{# The published site's one layout. Every link is written relative to `root`, so
+   the tree works from any prefix — a subdirectory host, or a file:// open — with
+   no configured base URL to get wrong. #}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}{{ site_title }}{% endblock %}</title>
+<link rel="stylesheet" href="{{ root }}site.css">
+{% block head %}{% endblock %}
+</head>
+<body{% block body_attrs %}{% endblock %}>
+<header class="masthead">
+  <p class="wordmark"><a href="{{ root }}">{{ site_title }}</a></p>
+  <nav>
+    <a href="{{ root }}">Stories</a>
+    <a href="{{ root }}archive/">Archive</a>
+    <a href="{{ root }}network/">Network</a>
+  </nav>
+</header>
+
+<main>
+{% block content %}{% endblock %}
+</main>
+
+<footer class="colophon">
+  <p>{{ site_title }}</p>
+</footer>
+{% block scripts %}{% endblock %}
+</body>
+</html>

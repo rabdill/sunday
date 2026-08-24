@@ -1,0 +1,26 @@
+{% extends "site/base.html" %}
+{# One story, and only the story (FR-010a).
+
+   No characters, no locations, no tags: that material is authoring context, and
+   the reader meets it through the story itself. The archive and the diagram are
+   where the collection is navigated. #}
+
+{% block title %}{{ story.title }} — {{ site_title }}{% endblock %}
+
+{% block content %}
+<article class="story">
+  <header class="story-header">
+    <h1>{{ story.title }}</h1>
+    <p class="dates">
+      <span class="published">{{ published_display }}</span>
+      {% if occurs_display %}
+      <span class="occurs">{{ occurs_display }}</span>
+      {% endif %}
+    </p>
+  </header>
+
+  <div class="prose">
+{{ body_html }}
+  </div>
+</article>
+{% endblock %}

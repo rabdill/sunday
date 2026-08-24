@@ -1,0 +1,46 @@
+{% extends "site/base.html" %}
+{# Every published story in the fiction's own chronology.
+
+   Undated stories are a separate group rather than being given a fabricated
+   position (FR-023a). Plain markup throughout: the archive is one of the two
+   routes to every story that works with JavaScript off (FR-014a). #}
+
+{% block title %}Archive — {{ site_title }}{% endblock %}
+
+{% block content %}
+{% if not dated and not undated %}
+<p>No stories published yet.</p>
+{% endif %}
+
+{% if dated %}
+<section class="archive-section">
+  <h2>In chronology</h2>
+  <ul class="archive-list">
+    {% for entry in dated %}
+    <li class="archive-entry">
+      <span class="archive-when">{{ entry.when }}</span>
+      <span class="archive-what">
+        <a href="{{ root }}stories/{{ entry.story.slug }}/">{{ entry.story.title }}</a>
+      </span>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+{% if undated %}
+<section class="archive-section">
+  <h2>Undated</h2>
+  <ul class="archive-list">
+    {% for entry in undated %}
+    <li class="archive-entry">
+      <span class="archive-when">{{ entry.published_display }}</span>
+      <span class="archive-what">
+        <a href="{{ root }}stories/{{ entry.story.slug }}/">{{ entry.story.title }}</a>
+      </span>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+{% endblock %}

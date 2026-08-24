@@ -1,0 +1,34 @@
+{% extends "site/base.html" %}
+{# The diagram: characters and locations, and how they connect.
+
+   Scripted, and openly so. Without JavaScript the page says what it is and points
+   at the two unscripted routes to every story, rather than rendering an empty box
+   (FR-022). Selecting a node lands on the feed, filtered (FR-015a). #}
+
+{% block title %}Network — {{ site_title }}{% endblock %}
+{% block body_attrs %} class="network-page"{% endblock %}
+
+{% block content %}
+<h1>Network</h1>
+
+<noscript>
+  <div class="network-fallback">
+    <p>The diagram needs JavaScript.</p>
+    <p>Every story is reachable without it: read
+      <a href="{{ root }}">the feed</a> or
+      <a href="{{ root }}archive/">the archive</a>.</p>
+  </div>
+</noscript>
+
+<div id="network" data-graph="{{ root }}graph.json" data-root="{{ root }}"></div>
+<p class="network-note">
+  {{ node_count }} subjects, {{ edge_count }} connections. A solid line means two
+  subjects appear in a story together; a dashed line is a stated relationship.
+  Select one to narrow the feed to it.
+</p>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ root }}vendor/cytoscape.min.js"></script>
+<script src="{{ root }}network.js" defer></script>
+{% endblock %}

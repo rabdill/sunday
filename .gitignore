@@ -1,5 +1,6 @@
-# Generated site — rebuilt from committed files, never committed.
-site/
+# Generated site — rebuilt from committed files, never committed. Anchored to the
+# repository root: the generator's own templates live in sunday/templates/site/.
+/site/
 
 # Local authoring store. Gitignored by design (FR-040): disposable, rebuildable.
 .sunday/
@@ -25,3 +26,6 @@ build/
 *.swp
 .idea/
 .vscode/
+
+# Local development collection created by scripts/dev.sh.
+/dev/

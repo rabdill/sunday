@@ -14,6 +14,32 @@ pip install -e ".[dev]"
 
 Python 3.11 or newer.
 
+## Running it locally
+
+```bash
+scripts/dev.sh
+```
+
+One command: it creates the virtualenv if there isn't one, seeds a scratch collection in
+`dev/` from the test fixtures the first time, builds the site, and leaves two servers
+running —
+
+| | |
+|---|---|
+| `http://127.0.0.1:5000/` | the authoring portal |
+| `http://127.0.0.1:5001/` | the generated site, served as a reader would meet it |
+
+The site is static, so a change made in the portal appears there after a build — its
+Build page, or `sunday build`. The portal also serves the last build at
+`/build/output/`, which is enough for a quick check without switching ports.
+
+Ports are overridable (`PORTAL_PORT`, `SITE_PORT`), as is the collection
+(`COLLECTION=path`) if you would rather work in your own. `dev/` is gitignored; delete
+it to start over.
+
+Both servers bind `127.0.0.1` only. The portal writes files and has no authentication,
+so reaching it from another machine means a tunnel, never a wider bind.
+
 ## The three commands
 
 ```bash

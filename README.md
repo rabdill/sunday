@@ -112,6 +112,27 @@ three is exported. That is the accepted trade for keeping a binary out of git. N
 text is ever at risk: the portal writes the file on every save, so the corpus on disk is
 never behind.
 
+## Publishing
+
+The collection in this repository lives at the root — `sunday.yml`, `stories/`, and the
+generated `cast.yml` — which is exactly where `sunday build` looks by default.
+
+`.github/workflows/build.yml` rebuilds and deploys on every push to `main`: install,
+`pytest`, `sunday build`, then upload `site/` to GitHub Pages. Nothing is deployed from a
+pull request or a branch.
+
+One setting has to be flipped by hand, once, before the first deploy succeeds:
+
+> **Settings → Pages → Build and deployment → Source: GitHub Actions**
+
+Without it the `deploy` job fails at `actions/deploy-pages` with a "Pages site not found"
+error, however green the build was. The site then lands at
+`https://<owner>.github.io/<repo>/`; every link the generator writes is relative, so a
+project path is as good as a domain root.
+
+The build never fails on a naming warning — `Mara Vance` / `Mara Vanse` is an editorial
+question, not a broken build (FR-017a). Warnings print in the CI log and the site ships.
+
 ## Tests
 
 ```bash

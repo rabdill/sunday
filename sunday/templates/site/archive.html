@@ -1,0 +1,69 @@
+{# Every published story in the fiction's own chronology.
+
+   No script of any kind (FR-014a): with the feed, this is the second route by
+   which every story is reachable without JavaScript (FR-021). Stories with no
+   `occurs` date are grouped separately rather than guessed at. #}
+{% set home = root if root else "./" %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Archive — {{ site_title }}</title>
+<link rel="stylesheet" href="{{ root }}site.css">
+</head>
+<body>
+<header class="masthead">
+  <p class="wordmark"><a href="{{ home }}">{{ site_title }}</a></p>
+  <nav>
+    <a href="{{ root }}archive/">Archive</a>
+    <a href="{{ root }}network/">Network</a>
+  </nav>
+</header>
+
+<main>
+  <h1>Archive</h1>
+
+{% if not dated and not undated %}
+  <p>No stories published yet.</p>
+{% endif %}
+
+{% if dated %}
+  <section class="archive-section">
+    <h2>In chronological order</h2>
+    <ul class="archive-list">
+{% for entry in dated %}
+      <li class="archive-entry">
+        <span class="archive-when">{{ entry.when }}</span>
+        <span class="archive-what">
+          <a href="{{ root }}stories/{{ entry.story.slug }}/">{{ entry.story.title }}</a>
+        </span>
+      </li>
+{% endfor %}
+    </ul>
+  </section>
+{% endif %}
+
+{% if undated %}
+  <section class="archive-section">
+    <h2>Undated</h2>
+    <ul class="archive-list">
+{% for entry in undated %}
+      <li class="archive-entry">
+        <span class="archive-when">—</span>
+        <span class="archive-what">
+          <a href="{{ root }}stories/{{ entry.story.slug }}/">{{ entry.story.title }}</a>
+        </span>
+      </li>
+{% endfor %}
+    </ul>
+  </section>
+{% endif %}
+</main>
+
+<footer class="colophon">
+  <p>Ordered by when each story happens, not when it was published.
+    <a href="{{ home }}">The feed</a> is the other way round.</p>
+</footer>
+</body>
+</html>

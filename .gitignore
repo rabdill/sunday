@@ -1,5 +1,7 @@
 # Generated site — rebuilt from committed files, never committed.
-site/
+# Anchored: unanchored `site/` also matched sunday/templates/site/, which
+# silently kept the four published-page templates out of the repository.
+/site/
 
 # Local authoring store. Gitignored by design (FR-040): disposable, rebuildable.
 .sunday/

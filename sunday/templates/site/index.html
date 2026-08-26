@@ -1,0 +1,63 @@
+{# The feed. Every published story is here, newest first.
+
+   The whole collection is in this markup unconditionally; `feed-filter.js` only
+   hides what does not match a `?character=` / `?location=` query (FR-011b). The
+   banner and the empty-result note start hidden so a reader without JavaScript
+   never sees a filter state that was never applied. #}
+{% set home = root if root else "./" %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ site_title }}</title>
+<link rel="stylesheet" href="{{ root }}site.css">
+</head>
+<body>
+<header class="masthead">
+  <p class="wordmark"><a href="{{ home }}">{{ site_title }}</a></p>
+  <nav>
+    <a href="{{ root }}archive/">Archive</a>
+    <a href="{{ root }}network/">Network</a>
+  </nav>
+</header>
+
+<main>
+  <div class="filter-banner" id="feed-filter-banner" hidden>
+    <p>Showing stories with <strong id="feed-filter-label"></strong>.
+      <a href="{{ home }}" id="feed-filter-clear">Show everything</a></p>
+  </div>
+
+  <p class="filter-empty" id="feed-filter-empty" hidden>
+    Nothing published under that name yet.
+    <a href="{{ home }}">Show everything</a>
+  </p>
+
+{% if items %}
+  <ul class="feed" id="feed">
+{% for item in items %}
+    <li class="feed-item"
+        data-characters="{{ item.character_slugs }}"
+        data-locations="{{ item.location_slugs }}">
+      <h2><a href="{{ root }}stories/{{ item.story.slug }}/">{{ item.story.title }}</a></h2>
+      <p class="dates">
+        <span class="published">Published {{ item.published_display }}</span>
+{% if item.occurs_display %}
+        <span class="occurs">{{ item.occurs_display }}</span>
+{% endif %}
+      </p>
+    </li>
+{% endfor %}
+  </ul>
+{% else %}
+  <p>No stories published yet.</p>
+{% endif %}
+</main>
+
+<footer class="colophon">
+  <p>{{ site_title }} — short fiction.
+    <a href="{{ root }}archive/">Read in chronological order</a>.</p>
+</footer>
+<script src="{{ root }}feed-filter.js"></script>
+</body>
+</html>

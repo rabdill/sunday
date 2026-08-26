@@ -1,0 +1,46 @@
+{# One story, and nothing else.
+
+   FR-010a: the page carries the text, the title, and the two dates. Characters,
+   locations and tags are deliberately absent — that material is authoring
+   surface, and the feed filter is where a reader meets it. #}
+{% set home = root if root else "./" %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ story.title }} — {{ site_title }}</title>
+<link rel="stylesheet" href="{{ root }}site.css">
+</head>
+<body>
+<header class="masthead">
+  <p class="wordmark"><a href="{{ home }}">{{ site_title }}</a></p>
+  <nav>
+    <a href="{{ root }}archive/">Archive</a>
+    <a href="{{ root }}network/">Network</a>
+  </nav>
+</header>
+
+<main>
+<article class="story">
+  <header class="story-header">
+    <h1>{{ story.title }}</h1>
+    <p class="dates">
+      <span class="published">Published {{ published_display }}</span>
+{% if occurs_display %}
+      <span class="occurs">{{ occurs_display }}</span>
+{% endif %}
+    </p>
+  </header>
+
+  <div class="prose">
+{{ body_html }}
+  </div>
+</article>
+</main>
+
+<footer class="colophon">
+  <p><a href="{{ home }}">All stories</a> · <a href="{{ root }}archive/">Archive</a></p>
+</footer>
+</body>
+</html>

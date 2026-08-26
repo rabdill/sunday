@@ -1,0 +1,55 @@
+{# The connection diagram.
+
+   The only page on the site that requires JavaScript, and it says so plainly
+   when it is unavailable (FR-022). It is never the only route to a story: the
+   feed and the archive both reach everything without any script (FR-021b).
+
+   `graph.json` carries site-root-relative URLs; `data-root` tells network.js
+   where this page sits so a tapped node lands on the right feed filter. #}
+{% set home = root if root else "./" %}
+<!DOCTYPE html>
+<html lang="en" class="network-page">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Network — {{ site_title }}</title>
+<link rel="stylesheet" href="{{ root }}site.css">
+</head>
+<body>
+<header class="masthead">
+  <p class="wordmark"><a href="{{ home }}">{{ site_title }}</a></p>
+  <nav>
+    <a href="{{ root }}archive/">Archive</a>
+    <a href="{{ root }}network/">Network</a>
+  </nav>
+</header>
+
+<main>
+  <h1>Network</h1>
+
+  <noscript>
+    <div class="network-fallback">
+      <p>The diagram is drawn in the browser and needs JavaScript.</p>
+      <p>Everything it points at is reachable without it:
+        <a href="{{ home }}">the feed</a> lists every story newest first, and
+        <a href="{{ root }}archive/">the archive</a> lists them in the order they happen.</p>
+    </div>
+  </noscript>
+
+  <div id="network" data-graph="{{ root }}graph.json" data-root="{{ root }}"></div>
+
+  <p class="network-note">
+    {{ node_count }} subject{{ '' if node_count == 1 else 's' }},
+    {{ edge_count }} connection{{ '' if edge_count == 1 else 's' }}.
+    A solid line means two subjects appear in a story together; a dashed line is a
+    stated relationship. Select a subject to read its stories.
+  </p>
+</main>
+
+<footer class="colophon">
+  <p><a href="{{ home }}">All stories</a> · <a href="{{ root }}archive/">Archive</a></p>
+</footer>
+<script src="{{ root }}vendor/cytoscape.min.js"></script>
+<script src="{{ root }}network.js"></script>
+</body>
+</html>

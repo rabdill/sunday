@@ -130,8 +130,14 @@ error, however green the build was. The site then lands at
 `https://<owner>.github.io/<repo>/`; every link the generator writes is relative, so a
 project path is as good as a domain root.
 
-The build never fails on a naming warning — `Mara Vance` / `Mara Vanse` is an editorial
+The build never fails on a naming warning — a near-duplicate spelling is an editorial
 question, not a broken build (FR-017a). Warnings print in the CI log and the site ships.
+
+The collection committed here is a set of selections from Mary Shelley's *Frankenstein*
+(1818, public domain), cut from the Project Gutenberg text. It is real content rather than
+placeholder text, chosen to exercise every surface: three `occurs` precisions and a group
+with none, two drafts, characters that bridge otherwise separate clusters of the diagram,
+and stated relationships alongside co-appearance.
 
 ## Tests
 

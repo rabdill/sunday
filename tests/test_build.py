@@ -8,13 +8,13 @@ refactor breaks.
 
 from __future__ import annotations
 
-import ast
 import filecmp
 import json
 from pathlib import Path
 
 import pytest
 
+from conftest import module_identifiers
 from sunday.build import BuildError, build_site
 
 PACKAGE = Path(__file__).parent.parent / "sunday"
@@ -292,21 +292,8 @@ def test_the_site_builds_where_no_store_has_ever_existed(tmp_path, scratch_corpu
 # reach into the authoring store, which does not exist in CI at all.
 
 
-def _imported_modules(path: Path) -> set[str]:
-    tree = ast.parse(path.read_text(encoding="utf-8"))
-    found: set[str] = set()
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Import):
-            found.update(alias.name for alias in node.names)
-        elif isinstance(node, ast.ImportFrom):
-            base = node.module or ""
-            found.add(base)
-            found.update(f"{base}.{alias.name}" if base else alias.name for alias in node.names)
-    return found
-
-
 def test_build_module_does_not_import_the_store():
-    imported = _imported_modules(PACKAGE / "build.py")
+    imported = module_identifiers(PACKAGE / "build.py").imports
     offending = {m for m in imported if "store" in m}
     assert offending == set(), f"build.py must not import the authoring store: {offending}"
 
@@ -316,19 +303,9 @@ def test_build_module_names_no_store_identifier():
 
     Deliberately AST-based rather than a text search — build.py's own docstring
     explains the boundary, and prose describing a rule must not be mistaken for
-    breaking it.
+    breaking it. (`names_attrs_defs` excludes string constants for that reason.)
     """
-    tree = ast.parse((PACKAGE / "build.py").read_text(encoding="utf-8"))
-
-    identifiers: set[str] = set()
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Name):
-            identifiers.add(node.id)
-        elif isinstance(node, ast.Attribute):
-            identifiers.add(node.attr)
-        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
-            identifiers.add(node.name)
-
+    identifiers = module_identifiers(PACKAGE / "build.py").names_attrs_defs
     offending = {
         name
         for name in identifiers

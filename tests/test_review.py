@@ -65,22 +65,19 @@ def test_edit_distance_is_bounded(left, right, expected):
 # ----------------------------------------------------------- probable duplicates
 
 
-def test_case_only_difference_is_detected(tmp_path):
-    """The exact case the name index was almost too clever to preserve."""
-    corpus = corpus_with(tmp_path, characters=["Mara Vance", "mara vance"])
-    assert pairs(probable_duplicates(corpus)) == {frozenset({"Mara Vance", "mara vance"})}
-
-
-def test_punctuation_only_difference_is_detected(tmp_path):
-    corpus = corpus_with(tmp_path, characters=["O'Brien", "OBrien"])
-    assert pairs(probable_duplicates(corpus)) == {frozenset({"O'Brien", "OBrien"})}
-
-
-def test_accent_only_difference_is_detected(tmp_path):
-    corpus = corpus_with(tmp_path, locations=["Café Verlaine", "Cafe Verlaine"])
-    assert pairs(probable_duplicates(corpus)) == {
-        frozenset({"Café Verlaine", "Cafe Verlaine"})
-    }
+@pytest.mark.parametrize(
+    ("kind", "first", "second"),
+    [
+        pytest.param("characters", "Mara Vance", "mara vance", id="case-only"),
+        pytest.param("characters", "O'Brien", "OBrien", id="punctuation-only"),
+        pytest.param("locations", "Café Verlaine", "Cafe Verlaine", id="accent-only"),
+        pytest.param("locations", "Portsmouth", "Portsmuth", id="misspelling"),
+    ],
+)
+def test_a_near_duplicate_pair_is_detected(tmp_path, kind, first, second):
+    """The exact case/punctuation/accent variation the name index was almost too clever to preserve."""
+    corpus = corpus_with(tmp_path, **{kind: [first, second]})
+    assert pairs(probable_duplicates(corpus)) == {frozenset({first, second})}
 
 
 def test_a_small_misspelling_is_detected(corpus):
@@ -104,11 +101,6 @@ def test_duplicates_are_detected_for_tags_too(corpus):
     """FR-032: the same machinery, across all three kinds."""
     found = pairs(probable_duplicates(corpus, "tag"))
     assert frozenset({"epistolary", "Epistolary"}) in found
-
-
-def test_duplicates_are_detected_for_locations_too(tmp_path):
-    corpus = corpus_with(tmp_path, locations=["Portsmouth", "Portsmuth"])
-    assert pairs(probable_duplicates(corpus)) == {frozenset({"Portsmouth", "Portsmuth"})}
 
 
 def test_the_same_spelling_under_two_kinds_is_not_a_duplicate(tmp_path):

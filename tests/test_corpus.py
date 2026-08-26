@@ -70,6 +70,8 @@ def test_absent_optional_fields_default_cleanly(stories_dir):
         ("no-frontmatter.md", "no frontmatter"),
         ("bad-date.md", "full YYYY-MM-DD date"),
         ("bad-slug.md", "slug must match"),
+        ("bad-draft.md", "draft must be true or false"),
+        ("bad-occurs.md", "not a real date"),
     ],
 )
 def test_structural_errors_name_file_and_problem(broken_dir, filename, expected_phrase):
@@ -97,26 +99,6 @@ def test_duplicate_slug_names_both_files(broken_dir, tmp_path):
     assert "collide-a.md" in message
     assert "collide-b.md" in message
     assert "duplicated-slug" in message
-
-
-def test_non_boolean_draft_is_rejected(tmp_path):
-    path = tmp_path / "s.md"
-    path.write_text(
-        "---\nslug: s\ntitle: S\npublished: 2026-01-01\ndraft: maybe\n---\n\nBody.\n",
-        encoding="utf-8",
-    )
-    with pytest.raises(StoryError, match="draft must be true or false"):
-        parse_story(path)
-
-
-def test_impossible_in_world_date_is_rejected(tmp_path):
-    path = tmp_path / "s.md"
-    path.write_text(
-        "---\nslug: s\ntitle: S\npublished: 2026-01-01\noccurs: '1921-02-30'\n---\n\nBody.\n",
-        encoding="utf-8",
-    )
-    with pytest.raises(StoryError, match="not a real date"):
-        parse_story(path)
 
 
 # ----------------------------------------------------------------- partial dates

@@ -12,6 +12,7 @@ from pathlib import Path
 
 import pytest
 
+from conftest import module_identifiers
 from sunday.portal import CollectionNotFound, create_app
 
 PORTAL_PACKAGE = Path(__file__).parent.parent / "sunday" / "portal"
@@ -577,24 +578,6 @@ def test_a_character_cannot_relate_to_themselves(client):
 # ------------------------------------------------------------ structural guards
 
 
-def _identifiers(path: Path) -> set[str]:
-    tree = ast.parse(path.read_text(encoding="utf-8"))
-    found: set[str] = set()
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Name):
-            found.add(node.id)
-        elif isinstance(node, ast.Attribute):
-            found.add(node.attr)
-        elif isinstance(node, ast.Import):
-            found.update(alias.name for alias in node.names)
-        elif isinstance(node, ast.ImportFrom):
-            found.add(node.module or "")
-            found.update(alias.name for alias in node.names)
-        elif isinstance(node, ast.Constant) and isinstance(node.value, str):
-            found.add(node.value)
-    return found
-
-
 def _portal_modules() -> list[Path]:
     return sorted(PORTAL_PACKAGE.glob("*.py"))
 
@@ -605,9 +588,11 @@ def test_portal_performs_no_version_control_operations():
     offenders: dict[str, set[str]] = {}
 
     for module in _portal_modules():
+        ids = module_identifiers(module)
+        tokens = ids.imports | ids.names_attrs_defs | ids.constants
         hits = {
             token
-            for token in _identifiers(module)
+            for token in tokens
             if token.lower() in forbidden or token.lower().startswith("git ")
         }
         if hits:

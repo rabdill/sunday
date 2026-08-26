@@ -9,7 +9,9 @@ frontmatter key, and a non-ASCII location.
 
 from __future__ import annotations
 
+import ast
 import shutil
+from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
@@ -49,3 +51,46 @@ def scratch_corpus(tmp_path: Path) -> Path:
     target = tmp_path / "corpus"
     shutil.copytree(CORPUS_DIR, target)
     return target
+
+
+@dataclass
+class ModuleIdentifiers:
+    """A module's AST, bucketed for structural-guard tests.
+
+    Split by bucket so each guard can compose exactly the vocabulary it needs — e.g.
+    excluding `constants` avoids matching a docstring's prose about the very rule
+    being enforced.
+    """
+
+    imports: set[str]
+    names_attrs_defs: set[str]
+    constants: set[str]
+
+
+def module_identifiers(path: Path) -> ModuleIdentifiers:
+    tree = ast.parse(path.read_text(encoding="utf-8"))
+    imports: set[str] = set()
+    names_attrs_defs: set[str] = set()
+    constants: set[str] = set()
+
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            imports.update(alias.name for alias in node.names)
+        elif isinstance(node, ast.ImportFrom):
+            base = node.module or ""
+            imports.add(base)
+            imports.update(
+                f"{base}.{alias.name}" if base else alias.name for alias in node.names
+            )
+        elif isinstance(node, ast.Name):
+            names_attrs_defs.add(node.id)
+        elif isinstance(node, ast.Attribute):
+            names_attrs_defs.add(node.attr)
+        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            names_attrs_defs.add(node.name)
+        elif isinstance(node, ast.Constant) and isinstance(node.value, str):
+            constants.add(node.value)
+
+    return ModuleIdentifiers(
+        imports=imports, names_attrs_defs=names_attrs_defs, constants=constants
+    )

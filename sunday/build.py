@@ -136,7 +136,7 @@ def build_site(
     _write(
         output_dir / "index.html",
         env.get_template("site/index.html").render(
-            root="", items=_feed_items(corpus), **common
+            root="", home="./", items=_feed_items(corpus), **common
         ),
     )
     pages += 1
@@ -148,6 +148,7 @@ def build_site(
             output_dir / "stories" / story.slug / "index.html",
             story_template.render(
                 root="../../",
+                home="../../",
                 story=story,
                 body_html=Markup(render_markdown(story.body)),
                 published_display=format_date(story.published),
@@ -163,6 +164,7 @@ def build_site(
         output_dir / "archive" / "index.html",
         env.get_template("site/archive.html").render(
             root="../",
+            home="../",
             dated=[
                 {"story": s, "when": format_partial(s.occurs), "published_display": format_date(s.published)}
                 for s in dated
@@ -186,6 +188,7 @@ def build_site(
         output_dir / "network" / "index.html",
         env.get_template("site/network.html").render(
             root="../",
+            home="../",
             node_count=len(connection_graph.nodes),
             edge_count=len(connection_graph.edges),
             **common,

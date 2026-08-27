@@ -1,0 +1,13 @@
+{# Shared row markup. Import `with context` so url_for is available. #}
+{% macro story_row(story, state=None) %}
+<li class="row">
+  <span class="row-main">
+    <a href="{{ url_for('stories.edit', slug=story.slug) }}">{{ story.title }}</a>
+    {% if story.draft %}<span class="tag-chip">draft</span>{% endif %}
+    {% if state and state.state.value == 'diverged' %}
+    <a class="tag-chip chip-warn" href="{{ url_for('stories.conflict', slug=story.slug) }}">conflict</a>
+    {% endif %}
+  </span>
+  <span class="row-meta">{{ story.published }}</span>
+</li>
+{% endmacro %}

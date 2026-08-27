@@ -1,4 +1,5 @@
 {% extends "portal/base.html" %}
+{% from "portal/_macros.html" import story_row with context %}
 {% block title %}{{ name.display }} — {{ site_title }}{% endblock %}
 
 {# Everything known about one subject, in one place. #}
@@ -20,15 +21,7 @@
   <h2>Stories</h2>
   {% if stories %}
   <ul class="rows">
-    {% for story in stories %}
-    <li class="row">
-      <span class="row-main">
-        <a href="{{ url_for('stories.edit', slug=story.slug) }}">{{ story.title }}</a>
-        {% if story.draft %}<span class="tag-chip">draft</span>{% endif %}
-      </span>
-      <span class="row-meta">{{ story.published }}</span>
-    </li>
-    {% endfor %}
+    {% for story in stories %}{{ story_row(story) }}{% endfor %}
   </ul>
   {% else %}
   <p class="muted">No stories reference this name.</p>

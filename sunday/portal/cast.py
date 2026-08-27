@@ -28,37 +28,47 @@ def index():
     subjects = store.subjects()
 
     by_key = {(s.kind, s.name): s for s in subjects}
-    findings = all_findings(corpus, subjects)
 
     flagged: dict[tuple[str, str], list] = {}
-    for finding in findings:
+    for finding in all_findings(corpus, subjects):
         flagged.setdefault((finding.name.kind, finding.name.display), []).append(finding)
 
-    rows = []
+    groups = []
     for kind in KINDS:
-        for name in corpus.names_of_kind(kind):
-            subject = by_key.get((kind, name.display))
-            rows.append(
-                {
-                    "name": name,
-                    "uses": corpus.use_count(name),
-                    "subject": subject,
-                    "findings": flagged.get((kind, name.display), []),
-                }
-            )
+        rows = [
+            {
+                "name": name,
+                "uses": corpus.use_count(name),
+                "subject": by_key.get((kind, name.display)),
+                "findings": flagged.get((kind, name.display), []),
+            }
+            for name in corpus.names_of_kind(kind)
+        ]
+        if rows:
+            groups.append((kind, rows))
 
-    return render_template("portal/cast_index.html", rows=rows, kinds=KINDS)
+    return render_template("portal/cast_index.html", groups=groups)
 
 
 @bp.get("/review/")
 def review():
-    """Every finding in one place."""
+    """Every finding in one place, split by kind for display."""
     corpus = current_corpus()
     store = current_store()
     store.sync_subjects(corpus)
+
+    buckets: dict[str, list] = {
+        "probable_duplicate": [], "orphaned_profile": [], "single_use": [], "unprofiled_name": []
+    }
+    for finding in all_findings(corpus, store.subjects()):
+        buckets[finding.kind].append(finding)
+
     return render_template(
         "portal/review.html",
-        findings=all_findings(corpus, store.subjects()),
+        duplicates=buckets["probable_duplicate"],
+        orphans=buckets["orphaned_profile"],
+        singles=buckets["single_use"],
+        unprofiled=buckets["unprofiled_name"],
     )
 
 

@@ -1,23 +1,7 @@
 {# One story: its title, two dates, and text. #}
-{% set home = root if root else "./" %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{{ story.title }} — {{ site_title }}</title>
-<link rel="stylesheet" href="{{ root }}site.css">
-</head>
-<body>
-<header class="masthead">
-  <p class="wordmark"><a href="{{ home }}">{{ site_title }}</a></p>
-  <nav>
-    <a href="{{ root }}archive/">Archive</a>
-    <a href="{{ root }}network/">Network</a>
-  </nav>
-</header>
-
-<main>
+{% extends "site/base.html" %}
+{% block title %}{{ story.title }} — {{ site_title }}{% endblock %}
+{% block main %}
 <article class="story">
   <header class="story-header">
     <h1>{{ story.title }}</h1>
@@ -33,10 +17,8 @@
 {{ body_html }}
   </div>
 </article>
-</main>
+{% endblock %}
 
-<footer class="colophon">
+{% block footer %}
   <p><a href="{{ home }}">All stories</a> · <a href="{{ root }}archive/">Archive</a></p>
-</footer>
-</body>
-</html>
+{% endblock %}

@@ -1,23 +1,7 @@
 {# Every published story in the fiction's own chronology. #}
-{% set home = root if root else "./" %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Archive — {{ site_title }}</title>
-<link rel="stylesheet" href="{{ root }}site.css">
-</head>
-<body>
-<header class="masthead">
-  <p class="wordmark"><a href="{{ home }}">{{ site_title }}</a></p>
-  <nav>
-    <a href="{{ root }}archive/">Archive</a>
-    <a href="{{ root }}network/">Network</a>
-  </nav>
-</header>
-
-<main>
+{% extends "site/base.html" %}
+{% block title %}Archive — {{ site_title }}{% endblock %}
+{% block main %}
   <h1>Archive</h1>
 
 {% if not dated and not undated %}
@@ -55,11 +39,9 @@
     </ul>
   </section>
 {% endif %}
-</main>
+{% endblock %}
 
-<footer class="colophon">
+{% block footer %}
   <p>Ordered by when each story happens, not when it was published.
     <a href="{{ home }}">The feed</a> is the other way round.</p>
-</footer>
-</body>
-</html>
+{% endblock %}

@@ -1,23 +1,8 @@
 {# The connection diagram. #}
-{% set home = root if root else "./" %}
-<!DOCTYPE html>
-<html lang="en" class="network-page">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Network — {{ site_title }}</title>
-<link rel="stylesheet" href="{{ root }}site.css">
-</head>
-<body>
-<header class="masthead">
-  <p class="wordmark"><a href="{{ home }}">{{ site_title }}</a></p>
-  <nav>
-    <a href="{{ root }}archive/">Archive</a>
-    <a href="{{ root }}network/">Network</a>
-  </nav>
-</header>
-
-<main>
+{% extends "site/base.html" %}
+{% block html_class %} class="network-page"{% endblock %}
+{% block title %}Network — {{ site_title }}{% endblock %}
+{% block main %}
   <h1>Network</h1>
 
   <noscript>
@@ -37,12 +22,13 @@
     A solid line means two subjects appear in a story together; a dashed line is a
     stated relationship. Select a subject to read its stories.
   </p>
-</main>
+{% endblock %}
 
-<footer class="colophon">
+{% block footer %}
   <p><a href="{{ home }}">All stories</a> · <a href="{{ root }}archive/">Archive</a></p>
-</footer>
+{% endblock %}
+
+{% block scripts %}
 <script src="{{ root }}vendor/cytoscape.min.js"></script>
 <script src="{{ root }}network.js"></script>
-</body>
-</html>
+{% endblock %}

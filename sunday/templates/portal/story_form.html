@@ -34,17 +34,14 @@
   <input type="text" id="occurs" name="occurs" value="{{ values.occurs }}"
          placeholder="1921-03" list="occurs-hints">
 
-  {% for kind, label, hint in [
-      ('characters', 'Characters', 'One per line. A new name needs no registration.'),
-      ('locations', 'Locations', 'One per line.'),
-      ('tags', 'Tags', 'One per line. Not published, but kept consistent.')] %}
-  <label for="{{ kind }}">{{ label }}
-    <span class="hint">{{ hint }}</span>
+  {% for field in name_fields %}
+  <label for="{{ field.key }}">{{ field.label }}
+    <span class="hint">{{ field.hint }}</span>
   </label>
-  <textarea id="{{ kind }}" name="{{ kind }}" class="short"
-            list="{{ kind }}-suggestions">{{ values[kind] }}</textarea>
-  <datalist id="{{ kind }}-suggestions">
-    {% for suggestion in suggestions[kind[:-1] if kind != 'tags' else 'tag'] %}
+  <textarea id="{{ field.key }}" name="{{ field.key }}" class="short"
+            list="{{ field.key }}-suggestions">{{ field.value }}</textarea>
+  <datalist id="{{ field.key }}-suggestions">
+    {% for suggestion in field.suggestions %}
     <option value="{{ suggestion }}"></option>
     {% endfor %}
   </datalist>

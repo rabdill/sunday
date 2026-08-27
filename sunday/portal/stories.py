@@ -78,6 +78,35 @@ def _suggestions():
     }
 
 
+#: The three name inputs on the story form: (field, singular kind, label, hint).
+_NAME_FIELDS = (
+    ("characters", "character", "Characters", "One per line. A new name needs no registration."),
+    ("locations", "location", "Locations", "One per line."),
+    ("tags", "tag", "Tags", "One per line. Not published, but kept consistent."),
+)
+
+
+def _name_fields(values: "FormValues") -> list[dict]:
+    suggestions = _suggestions()
+    return [
+        {"key": key, "label": label, "hint": hint,
+         "value": getattr(values, key), "suggestions": suggestions[singular]}
+        for key, singular, label, hint in _NAME_FIELDS
+    ]
+
+
+def _render_form(values: "FormValues", *, is_new: bool, problems=(), status: int = 200, **extra):
+    page = render_template(
+        "portal/story_form.html",
+        values=values,
+        name_fields=_name_fields(values),
+        problems=list(problems),
+        is_new=is_new,
+        **extra,
+    )
+    return (page, status) if status != 200 else page
+
+
 def _to_story(values: FormValues, existing: Story | None) -> tuple[Story | None, list[str]]:
     """Build a `Story` from form input, collecting every problem rather than the first."""
     problems: list[str] = []
@@ -165,13 +194,7 @@ def forget(slug: str):
 
 @bp.get("/new")
 def new():
-    return render_template(
-        "portal/story_form.html",
-        values=FormValues(published=_dt.date.today().isoformat()),
-        suggestions=_suggestions(),
-        problems=[],
-        is_new=True,
-    )
+    return _render_form(FormValues(published=_dt.date.today().isoformat()), is_new=True)
 
 
 @bp.get("/<slug>/edit")
@@ -189,11 +212,8 @@ def edit(slug: str):
 
     store = current_store()
     story_id = store.story_id(slug)
-    return render_template(
-        "portal/story_form.html",
-        values=FormValues.from_story(story),
-        suggestions=_suggestions(),
-        problems=[],
+    return _render_form(
+        FormValues.from_story(story),
         is_new=False,
         story=story,
         notes=store.notes_for("story", story_id) if story_id else (),
@@ -219,29 +239,15 @@ def save(slug: str):
 
     if story is None:
         # Nothing is written, and the form comes back with what was typed.
-        return (
-            render_template(
-                "portal/story_form.html",
-                values=values,
-                suggestions=_suggestions(),
-                problems=problems,
-                is_new=is_new,
-                story=existing,
-            ),
-            400,
-        )
+        return _render_form(values, is_new=is_new, problems=problems, status=400, story=existing)
 
     target = existing.source_path if existing else story_path(paths().stories, story)
     if is_new and target.exists():
-        return (
-            render_template(
-                "portal/story_form.html",
-                values=values,
-                suggestions=_suggestions(),
-                problems=[f"A file already exists at {target.name}. Choose a different slug."],
-                is_new=True,
-            ),
-            400,
+        return _render_form(
+            values,
+            is_new=True,
+            problems=[f"A file already exists at {target.name}. Choose a different slug."],
+            status=400,
         )
 
     written = write_story(target, story)

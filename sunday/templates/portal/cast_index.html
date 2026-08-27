@@ -9,13 +9,11 @@
   uses it — nothing here needs registering.
 </p>
 
-{% for kind in kinds %}
-{% set group = rows | selectattr('name.kind', 'equalto', kind) | list %}
-{% if group %}
+{% for kind, rows in groups %}
 <section class="panel">
   <h2>{{ kind }}s</h2>
   <ul class="rows">
-    {% for row in group %}
+    {% for row in rows %}
     <li class="row">
       <span class="row-main">
         <a href="{{ url_for('cast.show', kind=kind, slug=row.name.slug) }}">{{ row.name.display }}</a>
@@ -40,6 +38,5 @@
     {% endfor %}
   </ul>
 </section>
-{% endif %}
 {% endfor %}
 {% endblock %}

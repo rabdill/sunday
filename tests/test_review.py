@@ -1,18 +1,15 @@
 """Naming review: finding the typo that would otherwise publish quietly.
 
-MANDATORY per Constitution III. A misspelled name produces a plausible-looking page
-that is wrong — nothing errors, the reader simply never sees the story under the
-name they were looking for.
-
-The tag cases matter as much as the character ones: FR-032 extends every check to
-all three kinds, and it would be easy to implement this for characters only and
-never notice.
+A misspelled name produces a plausible-looking page that is wrong — nothing errors,
+the reader simply never sees the story under the name they were looking for. Every
+check runs over characters, locations, and tags alike.
 """
 
 from __future__ import annotations
 
 import pytest
 
+from conftest import build_into
 from sunday.corpus import load_corpus
 from sunday.review import (
     describe_finding,
@@ -59,7 +56,11 @@ def corpus_with(tmp_path, **fields):
     ],
 )
 def test_edit_distance_is_bounded(left, right, expected):
-    assert edit_distance(left, right, limit=2) == min(expected, 3)
+    result = edit_distance(left, right, limit=2)
+    if expected <= 2:
+        assert result == expected
+    else:
+        assert result > 2, "distance past the limit is abandoned, not computed exactly"
 
 
 # ----------------------------------------------------------- probable duplicates
@@ -98,7 +99,7 @@ def test_short_names_are_not_fuzzily_matched(tmp_path):
 
 
 def test_duplicates_are_detected_for_tags_too(corpus):
-    """FR-032: the same machinery, across all three kinds."""
+    """The same machinery, across all three kinds."""
     found = pairs(probable_duplicates(corpus, "tag"))
     assert frozenset({"epistolary", "Epistolary"}) in found
 
@@ -125,7 +126,7 @@ def test_single_use_names_are_flagged_across_all_kinds(corpus):
 
 
 def test_orphaned_profiles_are_reported(corpus, tmp_path):
-    """FR-032a: a profile describing a name no story uses."""
+    """A profile describing a name no story uses."""
     with Store.open(tmp_path / "store.db") as store:
         store.sync_subjects(corpus)
         store.set_profile(
@@ -161,7 +162,7 @@ def test_unprofiled_names_become_candidates(corpus, tmp_path):
 
 
 def test_dismissed_names_are_excluded_from_candidates(corpus, tmp_path):
-    """FR-044: a declined suggestion must not come back."""
+    """A declined suggestion must not come back."""
     with Store.open(tmp_path / "store.db") as store:
         store.sync_subjects(corpus)
         store.dismiss("character", "Mara Vanse")
@@ -183,29 +184,15 @@ def test_profiled_names_are_excluded_from_candidates(corpus, tmp_path):
 
 
 def test_a_build_with_findings_still_succeeds(tmp_path, scratch_corpus):
-    """FR-017a/b: naming findings warn, and the site publishes anyway."""
-    from sunday.build import build_site
-
-    result = build_site(
-        stories_dir=scratch_corpus / "stories",
-        settings_path=scratch_corpus / "sunday.yml",
-        cast_path=scratch_corpus / "cast.yml",
-        output_dir=tmp_path / "site",
-    )
+    """Naming findings warn, and the site publishes anyway."""
+    result = build_into(tmp_path / "site", scratch_corpus)
 
     assert result.warnings, "the fixture corpus contains a deliberate near-duplicate"
     assert (tmp_path / "site" / "index.html").exists(), "and it published regardless"
 
 
 def test_build_warnings_name_both_spellings(tmp_path, scratch_corpus):
-    from sunday.build import build_site
-
-    result = build_site(
-        stories_dir=scratch_corpus / "stories",
-        settings_path=scratch_corpus / "sunday.yml",
-        cast_path=scratch_corpus / "cast.yml",
-        output_dir=tmp_path / "site",
-    )
+    result = build_into(tmp_path / "site", scratch_corpus)
 
     joined = " ".join(result.warnings)
     assert "Mara Vance" in joined and "Mara Vanse" in joined

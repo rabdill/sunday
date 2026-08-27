@@ -14,19 +14,10 @@ from pathlib import Path
 
 import pytest
 
-from conftest import module_identifiers
-from sunday.build import BuildError, build_site
+from conftest import PUBLISHED_SLUGS, build_into, module_identifiers
+from sunday.build import BuildError
 
 PACKAGE = Path(__file__).parent.parent / "sunday"
-
-
-def build_into(target: Path, corpus_dir: Path) -> None:
-    build_site(
-        stories_dir=corpus_dir / "stories",
-        settings_path=corpus_dir / "sunday.yml",
-        cast_path=corpus_dir / "cast.yml",
-        output_dir=target,
-    )
 
 
 @pytest.fixture
@@ -43,18 +34,6 @@ def read(path: Path) -> str:
 # --------------------------------------------------------------- what gets emitted
 
 
-def test_emits_a_page_for_every_published_story(site):
-    slugs = sorted(p.parent.name for p in site.glob("stories/*/index.html"))
-    assert slugs == [
-        "letters-home",
-        "the-fog",
-        "the-keeper",
-        "the-lighthouse",
-        "the-second-letter",
-        "winter-crossing",
-    ]
-
-
 def test_markdown_is_rendered_not_shown_as_markup(site):
     page = read(site / "stories" / "the-lighthouse" / "index.html")
     assert "<em>him</em>" in page
@@ -65,27 +44,19 @@ def test_markdown_is_rendered_not_shown_as_markup(site):
 
 # --------------------------------------------------------------------- page inventory
 #
-# T032 / FR-009a / SC-017: exactly four kinds of page, and nothing else.
+# Exactly four kinds of page, and nothing else.
 
 
 def test_only_the_four_page_kinds_are_generated(site):
     pages = {p.relative_to(site).as_posix() for p in site.rglob("*.html")}
     expected = {"index.html", "archive/index.html", "network/index.html"} | {
-        f"stories/{slug}/index.html"
-        for slug in (
-            "letters-home",
-            "the-fog",
-            "the-keeper",
-            "the-lighthouse",
-            "the-second-letter",
-            "winter-crossing",
-        )
+        f"stories/{slug}/index.html" for slug in PUBLISHED_SLUGS
     }
     assert pages == expected
 
 
 def test_no_character_location_or_tag_pages_exist(site):
-    """Cast material belongs to the portal (FR-013)."""
+    """Cast material belongs to the portal, not the published site."""
     for forbidden in ("characters", "locations", "tags"):
         assert not (site / forbidden).exists(), f"/{forbidden}/ must not be generated"
 
@@ -94,7 +65,7 @@ def test_no_character_location_or_tag_pages_exist(site):
 
 
 def test_a_draft_appears_nowhere_in_the_output(site):
-    """Not the feed, not the archive, not the graph, not its own address (FR-012)."""
+    """Not the feed, not the archive, not the graph, not its own address."""
     assert not (site / "stories" / "unfinished").exists()
 
     for page in ("index.html", "archive/index.html", "graph.json"):
@@ -112,7 +83,7 @@ def test_a_draft_appears_nowhere_in_the_output(site):
 
 
 def test_story_pages_never_display_characters_locations_or_tags(site):
-    """FR-010a: a story page carries only the story."""
+    """A story page carries only the story."""
     page = read(site / "stories" / "the-lighthouse" / "index.html")
     body = page.split('<article class="story"', 1)[1].split("</article>", 1)[0]
 
@@ -130,9 +101,7 @@ def test_feed_is_newest_published_first(site):
 
 
 def test_feed_html_contains_every_story_regardless_of_filter(site):
-    """T048 / FR-011b.
-
-    The filter is a browser-side overlay over markup that already holds the whole
+    """The filter is a browser-side overlay over markup that already holds the whole
     collection. There is one feed document, so a reader arriving at
     `/?character=anything` with JavaScript off sees everything rather than nothing.
     """
@@ -156,7 +125,6 @@ def test_feed_items_carry_filter_data_attributes(site):
 
 
 def test_two_builds_of_unchanged_sources_are_byte_identical(tmp_path, scratch_corpus):
-    """SC-008 / FR-016."""
     first, second = tmp_path / "a", tmp_path / "b"
     build_into(first, scratch_corpus)
     build_into(second, scratch_corpus)
@@ -171,18 +139,11 @@ def test_two_builds_of_unchanged_sources_are_byte_identical(tmp_path, scratch_co
     assert mismatches == [], f"non-deterministic output: {mismatches}"
 
 
-def test_graph_json_is_byte_identical_across_builds(tmp_path, scratch_corpus):
-    first, second = tmp_path / "a", tmp_path / "b"
-    build_into(first, scratch_corpus)
-    build_into(second, scratch_corpus)
-    assert read(first / "graph.json") == read(second / "graph.json")
-
-
 # ------------------------------------------------------------------- stale output
 
 
 def test_stale_output_is_removed(tmp_path, scratch_corpus):
-    """A deleted or renamed story must leave no orphaned page behind (FR-018)."""
+    """A deleted or renamed story must leave no orphaned page behind."""
     out = tmp_path / "site"
     build_into(out, scratch_corpus)
     assert (out / "stories" / "the-fog").exists()
@@ -208,8 +169,8 @@ def test_refuses_to_clear_a_directory_it_did_not_generate(tmp_path, scratch_corp
 
 # -------------------------------------------------------------------- no leakage
 #
-# T095 / FR-046 / SC-014 / SC-018. Private authoring material must reach neither
-# the generated site nor any committed file.
+# Private authoring material must reach neither the generated site nor any
+# committed file.
 
 
 def test_notes_and_descriptions_reach_neither_the_site_nor_a_committed_file(
@@ -276,7 +237,7 @@ def test_a_missing_settings_file_is_a_named_error(tmp_path):
 
 
 def test_the_site_builds_where_no_store_has_ever_existed(tmp_path, scratch_corpus):
-    """T107 / SC-012 — exactly what CI does on every push."""
+    """Exactly what CI does on every push: no store exists."""
     assert not (scratch_corpus / ".sunday").exists()
 
     out = tmp_path / "site"
@@ -288,8 +249,8 @@ def test_the_site_builds_where_no_store_has_ever_existed(tmp_path, scratch_corpu
 
 # ------------------------------------------------------------- the export boundary
 #
-# T031 / Constitution II. The generator reads committed files alone; it must not
-# reach into the authoring store, which does not exist in CI at all.
+# The generator reads committed files alone; it must not reach into the authoring
+# store, which does not exist in CI at all.
 
 
 def test_build_module_does_not_import_the_store():

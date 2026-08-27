@@ -34,7 +34,7 @@ def test_a_round_trip_preserves_every_managed_field(stories_dir, tmp_path):
 
 
 def test_a_round_trip_preserves_unmanaged_keys(stories_dir, tmp_path):
-    """FR-027: a key the system does not manage is still the author's."""
+    """A key the system does not manage is still the author's."""
     original = parse_story(stories_dir / "the-lighthouse.md")
     target = tmp_path / "out.md"
     write_story(target, original)
@@ -69,7 +69,7 @@ def test_an_undated_story_writes_no_occurs_field(stories_dir, tmp_path):
 
 
 def test_non_ascii_names_survive_a_round_trip(stories_dir, tmp_path):
-    """T111 — accents must not be mangled into escapes or stripped."""
+    """Accents must not be mangled into escapes or stripped."""
     story = parse_story(stories_dir / "winter-crossing.md")
     target = tmp_path / "out.md"
     write_story(target, story)
@@ -90,15 +90,13 @@ def test_atomic_write_returns_exactly_the_bytes_written(tmp_path):
 
 def test_atomic_write_leaves_no_temporary_files_behind(tmp_path):
     atomic_write(tmp_path / "out.md", "hello\n")
-    leftovers = [p.name for p in tmp_path.iterdir() if p.name.startswith(".sunday-")]
-    assert leftovers == []
+    assert [p.name for p in tmp_path.iterdir()] == ["out.md"], "no temp file may survive"
 
 
 # ----------------------------------------------------------------------- rename
 
 
 def test_rename_leaves_zero_occurrences_of_the_old_name(scratch_corpus):
-    """SC-010."""
     stories = scratch_corpus / "stories"
     result = rename_across_corpus(stories, "character", "Mara Vanse", "Mara Vance")
 
@@ -108,7 +106,7 @@ def test_rename_leaves_zero_occurrences_of_the_old_name(scratch_corpus):
 
 
 def test_rename_works_identically_for_tags(scratch_corpus):
-    """FR-031: the rename logic does not branch on kind."""
+    """The rename logic does not branch on kind."""
     stories = scratch_corpus / "stories"
     result = rename_across_corpus(stories, "tag", "Epistolary", "epistolary")
 

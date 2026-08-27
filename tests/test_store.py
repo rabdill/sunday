@@ -1,8 +1,8 @@
 """The authoring store: conflict detection, subjects, and rename survival.
 
-MANDATORY per plan.md. Conflict detection is where a wrong answer costs someone
-their writing — either by overwriting an edit they made elsewhere, or by crying
-wolf until they stop reading the prompt.
+Conflict detection is where a wrong answer costs someone their writing — either by
+overwriting an edit they made elsewhere, or by crying wolf until they stop reading
+the prompt.
 """
 
 from __future__ import annotations
@@ -180,7 +180,7 @@ def test_syncing_twice_preserves_subject_ids(scratch_corpus, store):
 
 
 def test_dismissal_is_remembered(scratch_corpus, store):
-    """FR-044: a declined suggestion must not resurface every session."""
+    """A declined suggestion must not resurface every session."""
     store.dismiss("character", "Mara Vanse")
     assert store.subject("character", "Mara Vanse").dismissed is True
 
@@ -191,7 +191,7 @@ def test_a_dismissal_alone_is_not_a_profile(store):
 
 
 def test_rename_moves_the_subject_in_place(scratch_corpus, store):
-    """In place, so notes and relationships keep following the id (FR-047, FR-050)."""
+    """In place, so notes and relationships keep following the id."""
     corpus = load_corpus(scratch_corpus / "stories")
     store.sync_subjects(corpus)
     original = store.subject("character", "Mara Vanse").id
@@ -205,7 +205,7 @@ def test_rename_moves_the_subject_in_place(scratch_corpus, store):
 # ------------------------------------------------------- notes and relationships
 #
 # Both attach to a subject id rather than a name string, which is the whole reason
-# a rename cannot orphan them (FR-047, FR-050).
+# a rename cannot orphan them.
 
 
 def test_a_note_survives_renaming_its_subject(scratch_corpus, store):
@@ -289,7 +289,7 @@ def test_rebuild_leaves_every_story_clean(scratch_corpus, tmp_path):
 
 
 def test_rebuild_loses_no_story_text(scratch_corpus, tmp_path):
-    """SC-011 / FR-042: the store is disposable; fiction is not."""
+    """The store is disposable; fiction is not."""
     before = {p.name: p.read_text(encoding="utf-8") for p in (scratch_corpus / "stories").glob("*.md")}
 
     rebuild_store(

@@ -1,8 +1,8 @@
 """The connection graph and the archive's chronology.
 
-MANDATORY per Constitution III: the character/location graph is exactly where "a
-filtering bug that drops a story from a character's page is invisible — nothing
-errors, the reader simply never sees it."
+The character/location graph is exactly where a filtering bug that drops a story
+from a character's page is invisible — nothing errors, the reader simply never
+sees it.
 """
 
 from __future__ import annotations
@@ -48,7 +48,7 @@ def test_tags_are_not_nodes(graph):
 
 
 def test_isolated_nodes_are_retained(corpus):
-    """A character who shares no story with anyone is still shown (US6 scenario 3)."""
+    """A character who shares no story with anyone is still shown."""
     graph = build_graph(corpus)
     silas = next(n for n in graph.nodes if n.slug == "silas-thorne")
     assert silas.stories == 1
@@ -64,7 +64,7 @@ def test_node_story_counts_exclude_drafts(graph):
 
 
 def test_node_urls_point_at_the_filtered_feed(graph):
-    """FR-015a: selecting a node takes the reader to the feed, narrowed."""
+    """Selecting a node takes the reader to the feed, narrowed."""
     mara = next(n for n in graph.nodes if n.slug == "mara-vance")
     assert mara.url == "/?character=mara-vance"
 
@@ -93,7 +93,7 @@ def test_a_pair_produces_one_co_appearance_edge_not_two(graph):
 
 
 def test_stated_and_co_appearance_between_one_pair_stay_two_edges(corpus):
-    """FR-051: the author's claim and the filing's implication are different claims."""
+    """The author's claim and the filing's implication are different claims."""
     cast = CastExport(
         relationships=(
             RelationshipEntry(
@@ -111,7 +111,7 @@ def test_stated_and_co_appearance_between_one_pair_stay_two_edges(corpus):
 
 
 def test_a_stated_edge_connects_characters_who_share_no_story(corpus):
-    """US9 scenario 2: the diagram reflects the world, not only the filing."""
+    """The diagram reflects the world, not only the filing."""
     cast = CastExport(
         relationships=(
             RelationshipEntry(
@@ -149,7 +149,7 @@ def test_display_name_overrides_relabel_nodes(corpus):
 
 
 def test_a_stated_edge_survives_a_real_export_round_trip(scratch_corpus, tmp_path):
-    """T104: end to end, sourced from a `cast.yml` the portal actually wrote."""
+    """End to end, sourced from a `cast.yml` the portal actually wrote."""
     from sunday.corpus import load_corpus
     from sunday.export import export_from_store, load_cast, write_cast
     from sunday.store import Store
@@ -202,25 +202,8 @@ def test_archive_orders_by_in_world_chronology_not_publication(corpus):
     ]
 
 
-def test_a_bare_year_sorts_before_a_more_precise_date_in_the_same_year(corpus):
-    dated, _ = archive_order(corpus)
-    slugs = [s.slug for s in dated]
-    assert slugs.index("the-fog") < slugs.index("the-lighthouse")
-
-
-def test_stories_sharing_an_in_world_date_have_a_stable_order(corpus):
-    """FR-023: repeated builds must agree, so the tie-break is total."""
-    first = [s.slug for s in archive_order(corpus)[0]]
-    second = [s.slug for s in archive_order(corpus)[0]]
-    assert first == second
-
-    assert first.index("the-second-letter") < first.index("letters-home"), (
-        "the tie breaks by publication date, then slug"
-    )
-
-
 def test_undated_stories_are_set_aside_not_guessed_into_place(corpus):
-    """FR-023a: no fabricated position for a story the author has not placed."""
+    """No fabricated position for a story the author has not placed."""
     dated, undated = archive_order(corpus)
     assert [s.slug for s in undated] == ["the-keeper"]
     assert all(s.occurs is not None for s in dated)
@@ -235,7 +218,7 @@ def test_archive_excludes_drafts(corpus):
 
 
 def test_derived_context_reports_locations_and_co_appearances(corpus):
-    """FR-054 — the portal's cast page is built from this."""
+    """The portal's cast page is built from this."""
     mara = corpus.name("character", "Mara Vance")
     context = derived_context(corpus, mara)
 

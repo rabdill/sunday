@@ -22,6 +22,28 @@ STORIES_DIR = CORPUS_DIR / "stories"
 SETTINGS_PATH = CORPUS_DIR / "sunday.yml"
 BROKEN_DIR = FIXTURES / "broken"
 
+#: The published (non-draft) stories in the fixture corpus.
+PUBLISHED_SLUGS = (
+    "letters-home",
+    "the-fog",
+    "the-keeper",
+    "the-lighthouse",
+    "the-second-letter",
+    "winter-crossing",
+)
+
+
+def build_into(target: Path, corpus_dir: Path):
+    """Build the site from a corpus directory laid out like the fixture."""
+    from sunday.build import build_site
+
+    return build_site(
+        stories_dir=corpus_dir / "stories",
+        settings_path=corpus_dir / "sunday.yml",
+        cast_path=corpus_dir / "cast.yml",
+        output_dir=target,
+    )
+
 
 @pytest.fixture
 def stories_dir() -> Path:

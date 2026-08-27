@@ -1,8 +1,7 @@
 """Parsing, validation, and name normalization.
 
-MANDATORY per Constitution III: "Frontmatter parsing, tag normalization, and the
-character/location graph MUST have tests. These are where a bad file quietly
-produces a wrong page instead of an error."
+Frontmatter parsing, tag normalization, and the character/location graph are where
+a bad file quietly produces a wrong page instead of an error.
 """
 
 from __future__ import annotations
@@ -39,7 +38,7 @@ def test_parses_a_complete_story(stories_dir):
 
 
 def test_unmanaged_frontmatter_keys_are_preserved(stories_dir):
-    """Keys the system does not manage must survive untouched (FR-027)."""
+    """Keys the system does not manage must survive untouched."""
     story = parse_story(stories_dir / "the-lighthouse.md")
     assert story.extra == {"mood": "bleak"}
 
@@ -58,7 +57,7 @@ def test_absent_optional_fields_default_cleanly(stories_dir):
 # ------------------------------------------------------------- structural failures
 #
 # Each of these must name the file and the specific problem — a build failure the
-# author can act on without opening the source (FR-017, SC-004).
+# author can act on without opening the source.
 
 
 @pytest.mark.parametrize(
@@ -103,7 +102,7 @@ def test_duplicate_slug_names_both_files(broken_dir, tmp_path):
 
 # ----------------------------------------------------------------- partial dates
 #
-# All three forms, and the sort key that orders the archive (FR-023, FR-023b).
+# All three forms, and the sort key that orders the archive.
 
 
 def test_all_three_date_precisions_parse(corpus):

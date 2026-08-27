@@ -190,22 +190,6 @@ def build_graph(corpus: Corpus, cast: CastExport | None = None) -> ConnectionGra
     return ConnectionGraph(nodes=nodes, edges=edges)
 
 
-def subject_graph(corpus: Corpus, cast: CastExport, name: Name) -> ConnectionGraph:
-    """The slice of the graph centred on one subject — the portal's cast-page diagram.
-
-    Includes drafts, because the portal shows the author their whole world, not only
-    the published part of it.
-    """
-    centre = node_id(name.kind, name.slug)
-    full = build_graph(corpus, cast)
-    touching = [e for e in full.edges if centre in (e.source, e.target)]
-    keep = {centre} | {e.source for e in touching} | {e.target for e in touching}
-    return ConnectionGraph(
-        nodes=tuple(n for n in full.nodes if n.id in keep),
-        edges=tuple(touching),
-    )
-
-
 # ---------------------------------------------------------------------- the archive
 
 

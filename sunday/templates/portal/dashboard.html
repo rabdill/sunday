@@ -7,8 +7,6 @@
   {{ draft_count }} draft{{ "" if draft_count == 1 else "s" }}{% endif %}.
 </p>
 
-{% block dashboard_panels %}{% endblock %}
-
 <section class="panel">
   <h2>Recent</h2>
   {% if recent %}
@@ -16,9 +14,7 @@
     {% for story in recent %}
     <li class="row">
       <span class="row-main">
-        {% if has_stories %}
         <a href="{{ url_for('stories.edit', slug=story.slug) }}">{{ story.title }}</a>
-        {% else %}{{ story.title }}{% endif %}
         {% if story.draft %}<span class="tag-chip">draft</span>{% endif %}
       </span>
       <span class="row-meta">{{ story.published }}</span>

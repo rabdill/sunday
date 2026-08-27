@@ -13,10 +13,10 @@
     <span class="badge">authoring</span></p>
   <nav>
     <a href="{{ url_for('dashboard.index') }}">Dashboard</a>
-    {% if has_stories %}<a href="{{ url_for('stories.index') }}">Stories</a>{% endif %}
-    {% if has_cast %}<a href="{{ url_for('cast.index') }}">Cast</a>{% endif %}
-    {% if has_cast %}<a href="{{ url_for('cast.review') }}">Review</a>{% endif %}
-    {% if has_relationships %}<a href="{{ url_for('relationships.index') }}">Relationships</a>{% endif %}
+    <a href="{{ url_for('stories.index') }}">Stories</a>
+    <a href="{{ url_for('cast.index') }}">Cast</a>
+    <a href="{{ url_for('cast.review') }}">Review</a>
+    <a href="{{ url_for('relationships.index') }}">Relationships</a>
     <form method="post" action="{{ url_for('build.run_build') }}" class="inline">
       <button type="submit">Build</button>
     </form>

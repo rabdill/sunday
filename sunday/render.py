@@ -30,11 +30,6 @@ def render_markdown(text: str) -> str:
     return _md.render(text)
 
 
-def render_inline(text: str) -> str:
-    """Render a short fragment (a profile description) without wrapping it in <p>."""
-    return _md.renderInline(text)
-
-
 def format_date(value: _dt.date) -> str:
     """Display a publication date. Always exact, so always a full date."""
     return f"{value.day} {_MONTHS[value.month - 1]} {value.year}"
@@ -47,7 +42,3 @@ def format_partial(value: PartialDate) -> str:
     if value.precision is Precision.MONTH:
         return f"{_MONTHS[value.month - 1]} {value.year}"
     return str(value.year)
-
-
-def format_occurs(value: PartialDate | None) -> str:
-    return format_partial(value) if value is not None else "Undated"

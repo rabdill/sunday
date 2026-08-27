@@ -9,17 +9,14 @@ nothing else, because a tag has no profile, no relationships, and no context
 
 from __future__ import annotations
 
-import json
-
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 
 from ..corpus import KINDS, Kind, load_corpus
-from ..graph import derived_context, subject_graph
+from ..graph import derived_context
 from ..review import findings as all_findings
-from ..review import probable_duplicates
 from ..store import SUBJECT_KINDS
 from ..writer import rename_across_corpus
-from . import current_cast, current_corpus, current_store, paths
+from . import current_corpus, current_store, paths
 
 bp = Blueprint("cast", __name__, url_prefix="/cast")
 
@@ -83,8 +80,7 @@ def show(kind: str, slug: str):
     store = current_store()
     store.sync_subjects(corpus)
 
-    # Drafts are included here and marked: the portal shows the author their whole
-    # world, not only the published part of it (FR-053a).
+    # Drafts are included and marked: the portal shows the author their whole world.
     stories = corpus.stories_for(name, include_drafts=True)
 
     if kind == "tag":
@@ -92,7 +88,6 @@ def show(kind: str, slug: str):
 
     subject = store.subject(kind, name.display)
     context = derived_context(corpus, name)
-    graph = subject_graph(corpus, current_cast(), name)
 
     relationships = store.relationships_for(subject.id) if subject else ()
     notes = store.notes_for("subject", subject.id) if subject else ()
@@ -105,8 +100,6 @@ def show(kind: str, slug: str):
         context=context,
         relationships=relationships,
         notes=notes,
-        graph_json=json.dumps(graph.to_json()),
-        graph_is_empty=len(graph.edges) == 0,
         is_tag=False,
         note_target_kind="subject",
         note_target_ref=f"{kind}/{slug}",

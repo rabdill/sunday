@@ -1,52 +1,29 @@
 {% extends "portal/base.html" %}
 {% block title %}Conflict: {{ story.title }} — {{ site_title }}{% endblock %}
 
-{#
-  Both versions, side by side, and no default. Neither side is overwritten until
-  the author chooses (FR-041) — an automatic merge here would be a guess about
-  which words someone meant to keep.
-#}
 {% block content %}
 <h1>This story changed outside the portal</h1>
 
 <div class="callout callout-warn">
   <p>
     <strong>{{ story.title }}</strong> was edited somewhere else since the portal last
-    wrote it. Nothing has been overwritten. Choose which version to keep.
+    wrote it. Nothing has been overwritten. Review the version on disk, then continue.
   </p>
 </div>
 
-<div class="diff">
-  <section class="diff-side">
-    <h3>On disk — the edit made elsewhere</h3>
-    <pre class="diff-body">{{ disk_text }}</pre>
-  </section>
-  <section class="diff-side">
-    <h3>What the portal last wrote</h3>
-    {% if store_text %}
-    <pre class="diff-body">{{ store_text }}</pre>
-    {% else %}
-    <p class="diff-body muted">
-      No earlier version was recorded — the portal adopted this file rather than
-      writing it, so there is nothing to restore.
-    </p>
-    {% endif %}
-  </section>
-</div>
+<section class="diff-side">
+  <h3>On disk — the edit made elsewhere</h3>
+  <pre class="diff-body">{{ disk_text }}</pre>
+</section>
 
 <form method="post" action="{{ url_for('stories.resolve_conflict', slug=slug) }}">
   <div class="actions">
-    <button type="submit" name="choice" value="disk">Keep the version on disk</button>
-    {% if store_text %}
-    <button type="submit" name="choice" value="store" class="secondary">
-      Restore what the portal last wrote
-    </button>
-    {% endif %}
+    <button type="submit">Use the version on disk and continue</button>
   </div>
 </form>
 
 <p class="muted">
-  Editing is blocked for this story until the conflict is resolved, so a save cannot
-  silently discard whichever version you meant to keep.
+  Editing is blocked for this story until you continue, so a save cannot silently
+  discard an edit made outside the portal. Deeper history lives in git.
 </p>
 {% endblock %}

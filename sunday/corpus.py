@@ -23,7 +23,7 @@ import unicodedata
 from dataclasses import dataclass, field
 from enum import IntEnum
 from pathlib import Path
-from typing import Any, Iterable, Iterator, Literal
+from typing import Any, Iterable, Literal
 
 import yaml
 
@@ -505,7 +505,3 @@ def load_corpus(stories_dir: Path | str) -> Corpus:
         _by_name=by_name,
         stories_dir=stories_dir,
     )
-
-
-def iter_story_files(stories_dir: Path | str) -> Iterator[Path]:
-    return iter(sorted(Path(stories_dir).rglob("*.md")))

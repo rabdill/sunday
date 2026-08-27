@@ -37,14 +37,14 @@ def story_file(scratch_corpus: Path, slug: str) -> Path:
 # ------------------------------------------------------------------------ schema
 
 
-def test_schema_is_created_with_all_six_tables(store):
+def test_schema_creates_the_expected_tables(store):
     names = {
         row["name"]
         for row in store.connection.execute(
             "SELECT name FROM sqlite_master WHERE type = 'table'"
         )
     }
-    assert {"meta", "stories", "subjects", "notes", "relationships", "conflicts"} <= names
+    assert {"meta", "stories", "subjects", "notes", "relationships"} <= names
 
 
 def test_schema_version_is_recorded(store):

@@ -15,7 +15,7 @@ from flask import Blueprint, abort, flash, redirect, render_template, request, u
 
 from ..corpus import Story, StoryError, parse_partial_date, parse_story
 from ..store import ConflictState
-from ..writer import atomic_write, story_path, write_story
+from ..writer import story_path, write_story
 from . import current_corpus, current_store, paths
 
 bp = Blueprint("stories", __name__, url_prefix="/stories")
@@ -284,44 +284,26 @@ def conflict(slug: str):
     if not state.blocked:
         return redirect(url_for("stories.edit", slug=slug))
 
-    row = current_store().story_row(slug)
     return render_template(
         "portal/conflict.html",
         slug=slug,
         story=story,
         disk_text=story.source_path.read_text(encoding="utf-8"),
-        store_text=row["last_written_text"] if row else None,
     )
 
 
 @bp.post("/<slug>/conflict")
 def resolve_conflict(slug: str):
-    """Resolve a divergence — but only ever the way the author chose.
+    """Adopt the on-disk version, unblocking edits.
 
-    Neither side is overwritten until this point. "Keep disk" adopts the file as it
-    stands; "keep store" rewrites it from the parsed story. There is deliberately no
-    default and no automatic merge.
+    A diverged story is blocked until the author acknowledges the file here, so a
+    portal save can never silently overwrite an edit made outside it.
     """
     corpus = current_corpus()
     story = corpus.by_slug(slug)
     if story is None or story.source_path is None:
         abort(404)
 
-    choice = request.form.get("choice")
-    store = current_store()
-
-    if choice == "disk":
-        store.record_write(slug, story.source_path, story.source_path.read_bytes())
-        flash("Kept the version on disk.", "success")
-    elif choice == "store":
-        row = store.story_row(slug)
-        previous = row["last_written_text"] if row else None
-        if not previous:
-            abort(400, description="No earlier version was recorded for this story.")
-        written = atomic_write(story.source_path, previous)
-        store.record_write(slug, story.source_path, written)
-        flash("Restored the version the portal last wrote.", "success")
-    else:
-        abort(400)
-
+    current_store().record_write(slug, story.source_path, story.source_path.read_bytes())
+    flash("Using the version on disk.", "success")
     return redirect(url_for("stories.edit", slug=slug))

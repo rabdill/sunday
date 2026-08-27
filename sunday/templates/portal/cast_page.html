@@ -96,26 +96,10 @@
   {% else %}
   <p class="muted">No relationships recorded. These are things you state, not things the stories imply.</p>
   {% endif %}
-  {% if has_relationships %}
   <p><a href="{{ url_for('relationships.index') }}">Record a relationship</a></p>
-  {% endif %}
 </section>
 
-<section class="panel">
-  <h2>Diagram</h2>
-  {% if graph_is_empty %}
-  <p class="muted">
-    Nothing to draw yet — this {{ name.kind }} has no co-appearances and no stated
-    relationships.
-  </p>
-  {% else %}
-  <div id="network" data-graph-inline="{{ graph_json }}" data-root="/"></div>
-  {% endif %}
-</section>
-
-{% if has_notes %}
 {% include "portal/_notes.html" with context %}
-{% endif %}
 
 <section class="panel">
   <h2>Profile</h2>
@@ -148,11 +132,4 @@
     <div class="actions"><button type="submit">Rename across the corpus</button></div>
   </form>
 </section>
-{% endblock %}
-
-{% block scripts %}
-{% if not is_tag and not graph_is_empty %}
-<script src="{{ url_for('static', filename='vendor/cytoscape.min.js') }}"></script>
-<script src="{{ url_for('static', filename='network.js') }}" defer></script>
-{% endif %}
 {% endblock %}

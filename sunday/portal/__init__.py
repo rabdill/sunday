@@ -143,15 +143,7 @@ def create_app(
 
     @app.context_processor
     def _inject():
-        # Surfaces arrive phase by phase; the chrome shows only what is wired up.
-        registered = app.blueprints
-        return {
-            "site_title": current_settings().title,
-            "has_stories": "stories" in registered,
-            "has_cast": "cast" in registered,
-            "has_relationships": "relationships" in registered,
-            "has_notes": "notes" in registered,
-        }
+        return {"site_title": current_settings().title}
 
     from . import build_routes, cast, dashboard, notes, relationships, stories
 

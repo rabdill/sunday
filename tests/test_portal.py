@@ -273,17 +273,16 @@ def test_editing_a_diverged_story_redirects_to_the_conflict(client, scratch_corp
     assert "/conflict" in response.headers["Location"]
 
 
-def test_the_conflict_page_shows_both_versions(client, scratch_corpus):
+def test_the_conflict_page_shows_the_disk_version(client, scratch_corpus):
     client.get("/stories/")
     diverge(scratch_corpus)
 
     body = client.get("/stories/the-fog/conflict").get_data(as_text=True)
     assert "Edited in a text editor." in body, "the version on disk must be shown"
-    assert "On disk" in body and "What the portal last wrote" in body
-    assert body.count("diff-body") >= 2, "both versions must be presented, not just one"
+    assert "On disk" in body
 
 
-def test_neither_side_is_overwritten_until_the_author_chooses(client, scratch_corpus):
+def test_viewing_a_conflict_overwrites_nothing(client, scratch_corpus):
     client.get("/stories/")
     path = diverge(scratch_corpus)
     on_disk = path.read_bytes()
@@ -293,24 +292,14 @@ def test_neither_side_is_overwritten_until_the_author_chooses(client, scratch_co
     assert path.read_bytes() == on_disk, "merely viewing a conflict must change nothing"
 
 
-def test_keeping_the_disk_version_preserves_the_outside_edit(client, scratch_corpus):
+def test_adopting_the_disk_version_unblocks_editing(client, scratch_corpus):
     client.get("/stories/")
     path = diverge(scratch_corpus)
 
-    client.post("/stories/the-fog/conflict", data={"choice": "disk"}, follow_redirects=True)
+    client.post("/stories/the-fog/conflict", follow_redirects=True)
 
     assert "Edited in a text editor." in path.read_text(encoding="utf-8")
     assert client.get("/stories/the-fog/edit").status_code == 200, "no longer blocked"
-
-
-def test_keeping_the_portal_version_rewrites_the_file(client, scratch_corpus):
-    client.get("/stories/")
-    path = diverge(scratch_corpus)
-
-    client.post("/stories/the-fog/conflict", data={"choice": "store"}, follow_redirects=True)
-
-    assert "Edited in a text editor." not in path.read_text(encoding="utf-8")
-    assert client.get("/stories/the-fog/edit").status_code == 200
 
 
 def test_a_save_is_refused_while_a_story_is_conflicted(client, scratch_corpus):
@@ -361,7 +350,7 @@ def test_review_page_gathers_every_finding_in_one_place(client):
 
 
 def test_a_character_page_gathers_everything_known(client):
-    """FR-057 — stories, derived context, relationships, and a diagram in one place."""
+    """Stories, derived context, and relationships in one place."""
     body = client.get("/cast/character/mara-vance").get_data(as_text=True)
 
     assert "The Lighthouse" in body                  # stories
@@ -369,7 +358,6 @@ def test_a_character_page_gathers_everything_known(client):
     assert "Elias Doyle" in body                     # co-appearing
     assert "First appearance" in body
     assert "Relationships" in body
-    assert "Diagram" in body
 
 
 def test_a_character_page_marks_drafts(client):

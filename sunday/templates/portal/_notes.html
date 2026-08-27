@@ -1,9 +1,4 @@
-{#
-  Notes panel, included by the story form and the cast page.
-
-  Expects `notes`, plus `note_target_kind` and `note_target_ref` identifying what
-  the note attaches to.
-#}
+{# Notes panel, included by the story form and the cast page. #}
 {% set target_kind = note_target_kind | default('subject') %}
 {% set target_ref = note_target_ref | default(name.kind ~ '/' ~ name.slug if name is defined else '') %}
 

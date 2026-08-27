@@ -1,11 +1,4 @@
-{# The connection diagram.
-
-   The only page on the site that requires JavaScript, and it says so plainly
-   when it is unavailable (FR-022). It is never the only route to a story: the
-   feed and the archive both reach everything without any script (FR-021b).
-
-   `graph.json` carries site-root-relative URLs; `data-root` tells network.js
-   where this page sits so a tapped node lands on the right feed filter. #}
+{# The connection diagram. #}
 {% set home = root if root else "./" %}
 <!DOCTYPE html>
 <html lang="en" class="network-page">

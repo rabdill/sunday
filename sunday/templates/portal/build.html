@@ -1,10 +1,7 @@
 {% extends "portal/base.html" %}
 {% block title %}Build — {{ site_title }}{% endblock %}
 
-{#
-  A failure has to be legible here, not only on a terminal (FR-034) — the author
-  is in the browser, and that is where the answer belongs.
-#}
+{# The local build page: outcome, warnings, or error. #}
 {% block content %}
 <h1>Local build</h1>
 

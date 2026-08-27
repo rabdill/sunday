@@ -1,13 +1,4 @@
-"""The local authoring portal: a Flask app the author runs on their own machine.
-
-Never a component of the published site, never required for readers (FR-025). It
-binds `127.0.0.1` only — it writes files and has no authentication, and binding
-anywhere else would be indefensible.
-
-The corpus is reloaded from disk on every request rather than cached. That is what
-makes hand-editing a story in a text editor a supported workflow (FR-005) instead
-of something the portal fights.
-"""
+"""The local authoring portal: a Flask app the author runs on their own machine."""
 
 from __future__ import annotations
 
@@ -58,11 +49,7 @@ def current_settings() -> Settings:
 
 
 def current_store():
-    """The authoring store, opened once per request.
-
-    Imported lazily and only here: nothing in the generator may reach the store,
-    and keeping the import local to the portal keeps that boundary obvious.
-    """
+    """The authoring store, opened once per request."""
     from ..store import Store
 
     if "store" not in g:
@@ -71,22 +58,14 @@ def current_store():
 
 
 def reexport_cast() -> None:
-    """Rewrite `cast.yml` from current store state (FR-038).
-
-    Called after any save that changes a display name or a relationship, so the
-    committed export never lags the store.
-    """
+    """Rewrite `cast.yml` from current store state."""
     from ..export import export_from_store, write_cast
 
     write_cast(paths().cast, export_from_store(current_store()))
 
 
 def _verify_collection(stories: Path, settings: Path) -> None:
-    """Refuse to start anywhere that is not a story collection (FR-036).
-
-    Starting in the wrong directory and silently creating an empty collection would
-    be a confusing way to lose an afternoon.
-    """
+    """Refuse to start anywhere that is not a story collection."""
     if not stories.is_dir():
         raise CollectionNotFound(
             f"no stories directory at {stories} — this does not look like a Sunday "
@@ -128,7 +107,7 @@ def create_app(
     app.secret_key = "sunday-local-portal"  # local single-user tool; flashes only
 
     # The store is created or rebuilt once at startup, not per request, so the author
-    # is told immediately if anything could not be recovered (FR-040).
+    # is told immediately if anything could not be recovered.
     from ..store import Store
 
     app.config["SUNDAY_STORE_REPORT"] = Store.ensure(

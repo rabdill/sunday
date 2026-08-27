@@ -1,11 +1,4 @@
-"""Cast pages: the portal's richest surface, and where naming stays honest.
-
-These pages are authoring surfaces and are never generated into the published site
-(FR-053). A character's page gathers everything known about them in one place; a
-tag's page is deliberately the thinnest thing this route serves — a story list and
-nothing else, because a tag has no profile, no relationships, and no context
-(FR-053b).
-"""
+"""Cast pages: character, location, and tag authoring surfaces, never published."""
 
 from __future__ import annotations
 
@@ -59,7 +52,7 @@ def index():
 
 @bp.get("/review/")
 def review():
-    """Every finding in one place (SC-007)."""
+    """Every finding in one place."""
     corpus = current_corpus()
     store = current_store()
     store.sync_subjects(corpus)
@@ -130,7 +123,7 @@ def save_profile(kind: str, slug: str):
 
 @bp.post("/<kind>/<slug>/dismiss")
 def dismiss(kind: str, slug: str):
-    """Decline a candidate profile — and remember it (FR-044)."""
+    """Decline a candidate profile — and remember it."""
     kind = _kind_or_404(kind)
     if kind not in SUBJECT_KINDS:
         abort(404)
@@ -151,7 +144,7 @@ def dismiss(kind: str, slug: str):
 
 @bp.post("/<kind>/<slug>/rename")
 def rename(kind: str, slug: str):
-    """Rename across the whole corpus (FR-031), leaving zero occurrences (SC-010)."""
+    """Rename across the whole corpus, leaving zero occurrences."""
     kind = _kind_or_404(kind)
     corpus = current_corpus()
     name = corpus.name_by_slug(kind, slug)

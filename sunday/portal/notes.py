@@ -1,13 +1,4 @@
-"""Private authoring notes.
-
-Notes never appear in the generated site and are never exported into any committed
-file (FR-046). That is a structural property, not a policy: `export.py` has no path
-to the notes table, and the generator cannot read the store at all — so publishing
-one is impossible rather than merely forbidden.
-
-They are also the one thing genuinely lost when the store is deleted. The UI says
-so, because discovering it afterwards would be a bad surprise.
-"""
+"""Private authoring notes. Never published or exported."""
 
 from __future__ import annotations
 
@@ -27,7 +18,7 @@ def _back_to(target_kind: str, target_ref: str) -> str:
 
 @bp.post("/")
 def create():
-    """Attach a note to a story, character, or location (FR-045)."""
+    """Attach a note to a story, character, or location."""
     target_kind = request.form.get("target_kind", "")
     target_ref = request.form.get("target_ref", "")
     body = request.form.get("body", "").strip()

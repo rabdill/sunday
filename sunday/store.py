@@ -26,9 +26,7 @@ from .export import CastExport, load_cast
 SCHEMA_VERSION = 2
 
 SubjectKind = Literal["character", "location"]
-#: Tags deliberately get no `subjects` row. A subject row exists to give notes and
-#: relationships something stable to follow across a rename; tags have neither, so a
-#: row for one would be state with no consumer (see data-model.md).
+#: Tags deliberately get no `subjects` row — nothing follows a tag across a rename.
 SUBJECT_KINDS: tuple[SubjectKind, ...] = ("character", "location")
 
 SCHEMA = """
@@ -73,12 +71,7 @@ CREATE TABLE IF NOT EXISTS relationships (
 
 
 def content_hash(data: bytes | str) -> str:
-    """SHA-256 of exactly the bytes on disk.
-
-    Content, not modification time: a `git checkout` rewrites timestamps on every
-    file, and an author trained to click through a false conflict prompt is worse
-    off than one who never sees it.
-    """
+    """SHA-256 of exactly the bytes on disk."""
     if isinstance(data, str):
         data = data.encode("utf-8")
     return hashlib.sha256(data).hexdigest()
@@ -106,7 +99,7 @@ class StoryState:
 
     @property
     def blocked(self) -> bool:
-        """Editing a diverged story is blocked until the author resolves it (FR-041)."""
+        """Editing a diverged story is blocked until the author resolves it."""
         return self.state is ConflictState.DIVERGED
 
 
@@ -167,8 +160,7 @@ class RebuildReport:
         return "\n".join(lines)
 
 
-#: Never exported, so never recoverable by a rebuild. Named explicitly rather than
-#: discovered by the author later (FR-042).
+#: Never exported, so never recoverable by a rebuild.
 UNRECOVERABLE = ("notes", "dismissed candidates", "profile descriptions")
 
 
@@ -248,11 +240,7 @@ class Store:
         return int(row["id"]) if row else None
 
     def record_write(self, slug: str, path: Path | str, data: bytes | str) -> None:
-        """Record the hash of the bytes the portal just wrote.
-
-        Called on every save, so the portal's own writes are never later mistaken
-        for an edit made outside it.
-        """
+        """Record the hash of the bytes the portal just wrote."""
         if isinstance(data, str):
             data = data.encode("utf-8")
         self.connection.execute(
@@ -287,11 +275,7 @@ class Store:
         return StoryState(slug, ConflictState.DIVERGED, path)
 
     def scan(self, corpus: Corpus) -> dict[str, StoryState]:
-        """Classify every story, and adopt any the store has never seen.
-
-        A file the portal did not write is *untracked*, not diverged — adopting it
-        silently is right, because there is no earlier version to disagree with.
-        """
+        """Classify every story, and adopt any the store has never seen."""
         states: dict[str, StoryState] = {}
         for story in corpus.stories:
             state = self.state_of(story.slug, story.source_path)
@@ -316,11 +300,7 @@ class Store:
     # -- subjects
 
     def sync_subjects(self, corpus: Corpus) -> int:
-        """Ensure a `subjects` row exists for every character and location in use.
-
-        Preserves existing ids, so notes and relationships keep pointing at the same
-        subject across reloads.
-        """
+        """Ensure a `subjects` row exists for every character and location in use."""
         added = 0
         for kind in SUBJECT_KINDS:
             for name in corpus.names_of_kind(kind):
@@ -381,7 +361,7 @@ class Store:
         self.connection.commit()
 
     def dismiss(self, kind: str, name: str) -> None:
-        """Remember that the author declined a candidate profile (FR-044)."""
+        """Remember that the author declined a candidate profile."""
         subject = self.ensure_subject(kind, name)
         self.connection.execute(
             "UPDATE subjects SET dismissed = 1 WHERE id = ?", (subject.id,)
@@ -389,7 +369,7 @@ class Store:
         self.connection.commit()
 
     def rename_subject(self, kind: str, old: str, new: str) -> None:
-        """Rename in place, so notes and relationships follow the id (FR-047, FR-050)."""
+        """Rename in place, so notes and relationships follow the id."""
         existing = self.subject(kind, new)
         subject = self.subject(kind, old)
         if subject is None:
@@ -418,9 +398,6 @@ class Store:
         self.connection.commit()
 
     # -- notes
-    #
-    # Never exported, never published (FR-046). Attached to an id, so they survive a
-    # rename (FR-047). Lost with the store, and the UI says so.
 
     def notes_for(self, target_kind: str, target_id: int) -> tuple[Note, ...]:
         rows = self.connection.execute(
@@ -469,9 +446,6 @@ class Store:
         self.connection.commit()
 
     # -- relationships
-    #
-    # Maintained independently of what stories say (FR-049), referenced by subject id
-    # so a rename cannot break them (FR-050).
 
     def _relationship_from(self, row: sqlite3.Row) -> Relationship:
         return Relationship(
@@ -541,13 +515,7 @@ class Store:
 def rebuild_store(
     *, store_path: Path | str, stories_dir: Path | str, cast_path: Path | str
 ) -> RebuildReport:
-    """Discard the store and rebuild it from the committed files.
-
-    Recovers stories and their hashes from the corpus, subjects from the names in
-    use, and profiles and relationships from `cast.yml`. Cannot recover notes,
-    dismissals, or profile descriptions — none of the three is exported, and the
-    report says so rather than letting the author find out later.
-    """
+    """Discard the store and rebuild it from the committed files."""
     store_path = Path(store_path)
     if store_path.exists():
         store_path.unlink()

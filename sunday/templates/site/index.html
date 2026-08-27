@@ -1,9 +1,4 @@
-{# The feed. Every published story is here, newest first.
-
-   The whole collection is in this markup unconditionally; `feed-filter.js` only
-   hides what does not match a `?character=` / `?location=` query (FR-011b). The
-   banner and the empty-result note start hidden so a reader without JavaScript
-   never sees a filter state that was never applied. #}
+{# The feed: every published story, newest first. #}
 {% set home = root if root else "./" %}
 <!DOCTYPE html>
 <html lang="en">

@@ -1,10 +1,6 @@
 """Markdown rendering and date display.
 
-Two rules govern this module. Markdown output must be *defined by a spec* rather
-than by accumulated quirks, because FR-016 demands byte-identical rebuilds — so
-CommonMark, with nothing enabled beyond it. And a partial in-world date must be
-displayed at its true precision (FR-023b): "1921" stays "1921" and never becomes
-"1 January 1921", which would be a fabrication.
+CommonMark only; partial dates display at their true precision. See docs/DESIGN.md.
 """
 
 from __future__ import annotations
@@ -21,7 +17,7 @@ _MONTHS = (
 )
 
 #: CommonMark defaults, no plugins. Extensions get added when a story needs one,
-#: not in advance (Constitution II).
+#: not in advance.
 _md = MarkdownIt("commonmark")
 
 

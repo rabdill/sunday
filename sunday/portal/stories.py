@@ -1,9 +1,4 @@
-"""Writing and editing stories, and reconciling files edited outside the portal.
-
-A save is not complete until three things land: the file, the store row with the
-hash of exactly those bytes, and — when relationships or display names changed —
-the `cast.yml` export.
-"""
+"""Writing and editing stories, and reconciling files edited outside the portal."""
 
 from __future__ import annotations
 
@@ -75,7 +70,7 @@ def _lines(value: str) -> tuple[str, ...]:
 
 
 def _suggestions():
-    """Names already in the corpus, offered so reuse is easier than retyping (FR-029)."""
+    """Names already in the corpus, offered so reuse is easier than retyping."""
     corpus = current_corpus()
     return {
         kind: [name.display for name in corpus.names_of_kind(kind)]
@@ -143,8 +138,6 @@ def index():
     states = current_store().scan(corpus)
 
     # A store row whose file has vanished — deleted or renamed outside the portal.
-    # Reported rather than quietly forgotten, since the store is not the authority
-    # on what exists; the files are.
     known = {story.slug for story in corpus.stories}
     vanished = tuple(
         state for slug, state in sorted(states.items())
@@ -188,7 +181,7 @@ def edit(slug: str):
     if story is None:
         abort(404)
 
-    # A diverged file is not editable until the author has chosen a side (FR-041):
+    # A diverged file is not editable until the author has chosen a side:
     # saving over it would silently discard whichever version they meant to keep.
     state = current_store().state_of(slug, story.source_path)
     if state.blocked:
@@ -225,7 +218,7 @@ def save(slug: str):
     story, problems = _to_story(values, existing)
 
     if story is None:
-        # Nothing is written, and the form comes back with what was typed (FR-028).
+        # Nothing is written, and the form comes back with what was typed.
         return (
             render_template(
                 "portal/story_form.html",
@@ -294,11 +287,7 @@ def conflict(slug: str):
 
 @bp.post("/<slug>/conflict")
 def resolve_conflict(slug: str):
-    """Adopt the on-disk version, unblocking edits.
-
-    A diverged story is blocked until the author acknowledges the file here, so a
-    portal save can never silently overwrite an edit made outside it.
-    """
+    """Adopt the on-disk version, unblocking edits."""
     corpus = current_corpus()
     story = corpus.by_slug(slug)
     if story is None or story.source_path is None:

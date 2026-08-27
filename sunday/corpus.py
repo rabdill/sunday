@@ -1,18 +1,6 @@
 """Corpus loading: frontmatter parsing, the Story model, and name extraction.
 
-Both programs share this module. The generator reads a corpus and renders it; the
-portal reads the same corpus and edits it. Neither may assume the other has run.
-
-Two ideas here carry most of the weight:
-
-*Structural errors fail loudly; editorial ones do not.* Unparseable frontmatter, a
-missing title, a colliding slug — these raise, naming the file and the problem
-(FR-017). A misspelled character name is valid input and creates a real character
-(FR-008a); catching that is the portal's job, not this module's.
-
-*Names are compared normalized but stored verbatim.* `Name.normalized` exists only
-so two spellings can be recognized as probably-the-same. `Name.display` is exactly
-what the author wrote and is never rewritten by the system.
+Shared by both programs; read-only. See docs/DESIGN.md.
 """
 
 from __future__ import annotations
@@ -31,7 +19,7 @@ Kind = Literal["character", "location", "tag"]
 KINDS: tuple[Kind, ...] = ("character", "location", "tag")
 
 #: Frontmatter keys this module manages. Anything else is preserved in `Story.extra`
-#: and round-trips untouched through the portal (FR-027).
+#: and round-trips untouched through the portal.
 MANAGED_KEYS = frozenset(
     {"slug", "title", "published", "occurs", "characters", "locations", "tags", "draft"}
 )
@@ -44,11 +32,7 @@ _FENCE = re.compile(r"^---\s*$", re.MULTILINE)
 
 
 class CorpusError(Exception):
-    """Base for every structural failure in this module.
-
-    Every subclass names the offending file and states the specific problem, so a
-    build failure is actionable without opening the source (FR-017, SC-004).
-    """
+    """Base for every structural failure in this module."""
 
 
 class StoryError(CorpusError):
@@ -83,12 +67,7 @@ class Precision(IntEnum):
 
 @dataclass(frozen=True, order=False)
 class PartialDate:
-    """An in-world date that may be no more precise than the author knows.
-
-    Fiction rarely carries an exact day, so `1921` and `March 1921` are first-class
-    rather than padded into a fabricated `1921-01-01` (FR-023b). The padding exists
-    only inside `sort_date`, for ordering — never for display.
-    """
+    """An in-world date that may be no more precise than the author knows."""
 
     year: int
     month: int | None = None
@@ -116,12 +95,7 @@ class PartialDate:
 
 
 def parse_partial_date(value: Any, *, path: Path | str, field_name: str) -> PartialDate:
-    """Parse `YYYY`, `YYYY-MM`, or `YYYY-MM-DD` into a `PartialDate`.
-
-    YAML has already coerced some of these: a bare `1921` arrives as `int`, a full
-    `1921-03-04` as `datetime.date`, and `1921-03` — not a valid YAML date — as `str`.
-    All three are accepted; anything else is a structural error.
-    """
+    """Parse `YYYY`, `YYYY-MM`, or `YYYY-MM-DD` into a `PartialDate`."""
     if isinstance(value, _dt.datetime):
         return PartialDate(value.year, value.month, value.day)
     if isinstance(value, _dt.date):
@@ -158,7 +132,7 @@ def parse_partial_date(value: Any, *, path: Path | str, field_name: str) -> Part
 
 
 def parse_full_date(value: Any, *, path: Path | str, field_name: str) -> _dt.date:
-    """Parse a publication date. Unlike `occurs`, this must be exact (FR-002a)."""
+    """Parse a publication date. Unlike `occurs`, this must be exact."""
     if isinstance(value, _dt.datetime):
         return value.date()
     if isinstance(value, _dt.date):
@@ -179,11 +153,7 @@ def parse_full_date(value: Any, *, path: Path | str, field_name: str) -> _dt.dat
 
 
 def split_frontmatter(text: str, *, path: Path | str) -> tuple[str, str]:
-    """Split a story file into its frontmatter block and its body.
-
-    Twelve lines instead of a dependency (see research.md). The file must open with a
-    `---` fence; the block ends at the next one.
-    """
+    """Split a story file into its frontmatter block and its body."""
     stripped = text.lstrip("﻿")
     if not stripped.startswith("---"):
         raise StoryError(path, "no frontmatter: file must begin with a '---' fence")
@@ -212,7 +182,7 @@ class Story:
     locations: tuple[str, ...] = ()
     tags: tuple[str, ...] = ()
     draft: bool = False
-    #: Frontmatter keys this system does not manage, preserved verbatim (FR-027).
+    #: Frontmatter keys this system does not manage, preserved verbatim.
     extra: dict[str, Any] = field(default_factory=dict)
     #: For error messages only. Never rendered.
     source_path: Path | None = None
@@ -226,12 +196,7 @@ class Story:
 
     @property
     def archive_sort_key(self) -> tuple[_dt.date, int, _dt.date, str]:
-        """Total order for the archive. Documented tie-break, so builds agree (FR-023).
-
-        Only meaningful for stories that have an `occurs`; undated stories are
-        partitioned out before sorting rather than given a fabricated position
-        (FR-023a).
-        """
+        """Total order for the archive. Documented tie-break, so builds agree."""
         assert self.occurs is not None, "archive_sort_key requires an in-world date"
         return (self.occurs.sort_date, int(self.occurs.precision), self.published, self.slug)
 
@@ -316,12 +281,7 @@ _SPACE = re.compile(r"\s+")
 
 
 def normalize_name(text: str) -> str:
-    """Fold a name for *comparison only*. The display form is never rewritten.
-
-    Casefold, strip accents, drop punctuation and apostrophes, collapse whitespace.
-    This is what lets "Mara Vance" and "mara vance." be recognized as probably the
-    same person without the system ever changing what the author typed.
-    """
+    """Fold a name for *comparison only*. The display form is never rewritten."""
     decomposed = unicodedata.normalize("NFKD", text)
     without_marks = "".join(c for c in decomposed if not unicodedata.combining(c))
     folded = without_marks.casefold()
@@ -329,11 +289,7 @@ def normalize_name(text: str) -> str:
 
 
 def slugify(text: str) -> str:
-    """Derive a URL-safe segment from a name, for filter query strings and node ids.
-
-    Apostrophes are dropped rather than hyphenated, so "O'Brien" reads as `obrien`
-    and not `o-brien` — matching how `normalize_name` treats them.
-    """
+    """Derive a URL-safe segment from a name, for filter query strings and node ids."""
     decomposed = unicodedata.normalize("NFKD", text)
     without_marks = "".join(c for c in decomposed if not unicodedata.combining(c))
     ascii_only = without_marks.encode("ascii", "ignore").decode("ascii")
@@ -346,13 +302,8 @@ def slugify(text: str) -> str:
 class Name:
     """A character, location, or tag, as the corpus uses it.
 
-    Exists because a story names it (FR-008) — never because it was declared.
-
-    **One distinct spelling is one Name.** "epistolary" and "Epistolary" are two
-    Names, not one, because the spec is explicit that a typo silently produces a
-    second character rather than an error — and detecting that pair is the entire
-    point of User Story 4. `normalized` exists so review can recognize the two as
-    probably-the-same (FR-032); it is never the identity of a name.
+    One distinct spelling is one Name; `normalized` exists only so review can
+    recognize two spellings as probably-the-same, never as a name's identity.
     """
 
     display: str
@@ -370,11 +321,7 @@ class Name:
 
 @dataclass
 class Corpus:
-    """Every story, plus the names they use. Read-only once loaded.
-
-    The portal mutates *files and store*, then reloads — an in-memory copy is never
-    allowed to become authoritative.
-    """
+    """Every story, plus the names they use. Read-only once loaded."""
 
     stories: tuple[Story, ...]
     names: dict[tuple[Kind, str], Name]
@@ -384,14 +331,14 @@ class Corpus:
     # -- stories
 
     def published(self) -> tuple[Story, ...]:
-        """Non-draft stories only. Everything the generator emits starts here (FR-012)."""
+        """Non-draft stories only. Everything the generator emits starts here."""
         return tuple(s for s in self.stories if not s.draft)
 
     def by_slug(self, slug: str) -> Story | None:
         return next((s for s in self.stories if s.slug == slug), None)
 
     def feed_order(self, *, include_drafts: bool = False) -> tuple[Story, ...]:
-        """Publication order, newest first (FR-011). Ties break by slug for determinism."""
+        """Publication order, newest first. Ties break by slug for determinism."""
         pool = self.stories if include_drafts else self.published()
         return tuple(sorted(pool, key=lambda s: (s.published, s.slug), reverse=True))
 
@@ -421,7 +368,7 @@ class Corpus:
         )
 
     def stories_for(self, name: Name, *, include_drafts: bool = False) -> tuple[Story, ...]:
-        """Every story referencing a name, newest published first (FR-053a)."""
+        """Every story referencing a name, newest published first."""
         found = self._by_name.get(name.key, ())
         if not include_drafts:
             found = tuple(s for s in found if not s.draft)
@@ -437,14 +384,8 @@ def _index_names(stories: Iterable[Story]) -> tuple[
 ]:
     """Gather every name the corpus uses, keyed by exact spelling.
 
-    Two spellings are two names. Collapsing them on the normalized form would make a
-    case-only typo invisible — and finding that typo is exactly what User Story 4 is
-    for. Review compares the normalized forms and offers a rename; this index just
-    reports, faithfully, what the corpus says.
-
-    Distinct names that would slugify identically ("Café Verlaine" and "Cafe
-    Verlaine", or "epistolary" and "Epistolary") get a deterministic suffix rather
-    than colliding on one URL, which would silently merge two names' stories.
+    Two spellings are two names. Names that would slugify identically get a
+    deterministic suffix rather than colliding on one URL.
     """
     members: dict[tuple[Kind, str], list[Story]] = {}
 
@@ -462,10 +403,8 @@ def _index_names(stories: Iterable[Story]) -> tuple[
 
     names: dict[tuple[Kind, str], Name] = {}
     for (kind, base), keys in by_base.items():
-        # When spellings collide on one slug, the most-used one keeps the clean URL.
-        # Sorting by name alone would hand it to whichever sorts first in ASCII,
-        # which is arbitrary from the author's point of view — a single stray
-        # "Epistolary" would outrank the "epistolary" on most of the corpus.
+        # When spellings collide on one slug, the most-used one keeps the clean URL;
+        # sorting by name alone would be arbitrary from the author's point of view.
         ordered = sorted(keys, key=lambda k: (-len(members[k]), k[1]))
         for position, key in enumerate(ordered):
             slug = base if position == 0 else f"{base}-{position + 1}"
@@ -480,11 +419,7 @@ def _index_names(stories: Iterable[Story]) -> tuple[
 
 
 def load_corpus(stories_dir: Path | str) -> Corpus:
-    """Read every `.md` under `stories_dir` into a `Corpus`.
-
-    Raises `DuplicateSlugError` naming *both* files when two stories claim one
-    address — either could be the mistake, so blaming one would be a guess.
-    """
+    """Read every `.md` under `stories_dir` into a `Corpus`."""
     stories_dir = Path(stories_dir)
     if not stories_dir.is_dir():
         raise CorpusError(f"stories directory not found: {stories_dir}")

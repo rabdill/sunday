@@ -1,13 +1,4 @@
-"""Stated relationships between characters.
-
-Maintained independently of what any story says (FR-049), so the author can record
-what is true of the world before it has been written down. Every change re-exports
-`cast.yml` (FR-038), which is how a relationship reaches the published diagram.
-
-The published diagram draws these as a distinct edge kind and never merges them
-with co-appearance (FR-051): "they appear in a story together" and "the author says
-they are siblings" are different claims.
-"""
+"""Stated relationships between characters, maintained independently of what any story says."""
 
 from __future__ import annotations
 

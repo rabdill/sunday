@@ -1,9 +1,4 @@
-"""Command line entry point: `build`, `portal`, and `store rebuild`.
-
-`argparse`, deliberately — a CLI framework would be a dependency for three
-subcommands (Constitution I). Option names and exit codes are fixed by
-contracts/cli.md.
-"""
+"""Command line entry point: `build`, `portal`, and `store rebuild`."""
 
 from __future__ import annotations
 
@@ -80,12 +75,12 @@ def _run_build(args: argparse.Namespace) -> int:
             output_dir=args.output,
         )
     except (CorpusError, SettingsError) as exc:
-        # Structural failure: name the file and the problem, publish nothing (FR-017, FR-020).
+        # Structural failure: name the file and the problem, publish nothing.
         print(f"error: {exc}", file=sys.stderr)
         return EXIT_STRUCTURAL_ERROR
 
     # Naming findings are editorial, not structural. They never block publication
-    # unless the author explicitly opts in with --strict (FR-017a/b).
+    # unless the author explicitly opts in with --strict.
     if result.warnings and not args.quiet:
         for warning in result.warnings:
             print(f"warning: {warning}", file=sys.stderr)
@@ -126,7 +121,7 @@ def _run_portal(args: argparse.Namespace) -> int:
         ).start()
 
     # 127.0.0.1 only. The portal writes files and has no authentication; binding
-    # anywhere else would be indefensible (contracts/cli.md).
+    # anywhere else would be indefensible.
     app.run(host="127.0.0.1", port=args.port, debug=False)
     return EXIT_OK
 

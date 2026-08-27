@@ -1,9 +1,4 @@
-"""Trigger a local build and browse the result.
-
-`POST /build` runs the same code path as `sunday build`, reading committed files
-only. A failure is reported in the browser rather than only on a terminal
-(FR-034), because the whole point is not having to watch the terminal.
-"""
+"""Trigger a local build and browse the result."""
 
 from __future__ import annotations
 
@@ -58,11 +53,7 @@ def build_status():
 @bp.get("/build/output/")
 @bp.get("/build/output/<path:subpath>")
 def build_output(subpath: str = ""):
-    """Serve the most recent local build for browsing.
-
-    Directory-style URLs resolve to their `index.html`, matching how the published
-    site is served.
-    """
+    """Serve the most recent local build for browsing."""
     root = paths().output.resolve()
     if not root.is_dir():
         abort(404, description="No local build yet — run one from the dashboard.")

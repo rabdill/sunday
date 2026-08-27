@@ -1,14 +1,7 @@
 {% extends "portal/base.html" %}
 {% block title %}{{ name.display }} — {{ site_title }}{% endblock %}
 
-{#
-  Everything known about one subject, in one place (FR-057) — and never generated
-  into the published site (FR-053).
-
-  A tag's page is deliberately the thinnest thing this template renders: a story
-  list, and nothing else. No profile, relationships, diagram, or notes, because
-  none of those concepts apply to a tag (FR-053b).
-#}
+{# Everything known about one subject, in one place. #}
 {% block content %}
 <h1>{{ name.display }}</h1>
 <p class="muted">

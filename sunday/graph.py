@@ -1,12 +1,6 @@
 """The connection graph, and the archive's chronology.
 
-Derived, rebuildable, disposable — everything here is computed from the corpus and
-the `cast.yml` export on every build, and nothing is cached (Constitution II).
-
-The one rule worth stating twice: a co-appearance and a stated relationship between
-the same pair are **two edges, never merged** (FR-051). "These two people appear in
-a story together" and "the author says they are siblings" are different claims, and
-collapsing them would silently assert something nobody wrote.
+Derived from the corpus and cast export on every build, never cached. See docs/DESIGN.md.
 """
 
 from __future__ import annotations
@@ -19,7 +13,7 @@ from .corpus import Corpus, Kind, Name, Story
 from .export import CastExport
 
 #: Kinds that become diagram nodes. Tags are managed in the portal but are not part
-#: of the published world (FR-015).
+#: of the published world.
 NODE_KINDS: tuple[Kind, ...] = ("character", "location")
 
 
@@ -87,7 +81,7 @@ def node_id(kind: str, slug: str) -> str:
 
 
 def node_url(kind: str, slug: str) -> str:
-    """Where selecting this node takes the reader: the feed, narrowed (FR-015a)."""
+    """Where selecting this node takes the reader: the feed, narrowed."""
     return f"/?{kind}={slug}"
 
 
@@ -106,17 +100,11 @@ def _published_names(corpus: Corpus, story: Story) -> list[Name]:
 
 
 def build_graph(corpus: Corpus, cast: CastExport | None = None) -> ConnectionGraph:
-    """Assemble the published connection graph.
-
-    Nodes are characters and locations appearing in at least one *published* story,
-    plus any subject named in an exported relationship — so a stated edge is never
-    drawn to a node that does not exist. Isolated nodes are retained: a character in
-    one story with no one else is still part of the world.
-    """
+    """Assemble the published connection graph."""
     cast = cast or CastExport()
     published = corpus.published()
 
-    # Story counts and co-appearance, from published stories only (FR-012).
+    # Story counts and co-appearance, from published stories only.
     counts: dict[tuple[str, str], int] = {}
     pair_weights: dict[tuple[str, str], int] = {}
     display_for: dict[tuple[str, str], str] = {}
@@ -194,12 +182,7 @@ def build_graph(corpus: Corpus, cast: CastExport | None = None) -> ConnectionGra
 
 
 def archive_order(corpus: Corpus) -> tuple[tuple[Story, ...], tuple[Story, ...]]:
-    """Split published stories into in-world chronology and an undated group.
-
-    A story with no `occurs` is not given a guessed position — it is set aside and
-    listed separately (FR-023a). Ties inside the chronology break by publication
-    date then slug, so repeated builds agree (FR-023).
-    """
+    """Split published stories into in-world chronology and an undated group."""
     published = corpus.published()
     dated = tuple(sorted((s for s in published if s.occurs), key=lambda s: s.archive_sort_key))
     undated = tuple(
@@ -213,7 +196,7 @@ def archive_order(corpus: Corpus) -> tuple[tuple[Story, ...], tuple[Story, ...]]
 
 @dataclass(frozen=True)
 class DerivedContext:
-    """What the corpus itself says about a character (FR-054)."""
+    """What the corpus itself says about a character."""
 
     locations: tuple[Name, ...]
     co_appearing: tuple[Name, ...]

@@ -1,13 +1,4 @@
-"""Writing story files, and renaming a name across the whole corpus.
-
-Every write is atomic — temp file, then `os.replace` — so a build reading the
-corpus at the same moment never sees a half-written story.
-
-Serialization preserves frontmatter keys this system does not manage (FR-027). A
-key the author added for their own purposes must survive a round trip through the
-portal untouched; quietly dropping it would be a small betrayal of "the file is
-yours".
-"""
+"""Writing story files, and renaming a name across the whole corpus."""
 
 from __future__ import annotations
 
@@ -21,8 +12,7 @@ import yaml
 
 from .corpus import Corpus, Kind, Story, load_corpus
 
-#: Managed keys are written in this order, so a portal-written file reads naturally
-#: and diffs stay legible.
+#: Managed keys are written in this order, so diffs stay legible.
 KEY_ORDER = ("slug", "title", "published", "occurs", "characters", "locations", "tags", "draft")
 
 
@@ -56,7 +46,7 @@ def serialize_story(story: Story) -> str:
     if story.draft:
         meta["draft"] = True
 
-    # Unmanaged keys keep their values and follow the managed block (FR-027).
+    # Unmanaged keys keep their values and follow the managed block.
     for key in sorted(story.extra):
         meta[key] = story.extra[key]
 
@@ -73,11 +63,7 @@ def serialize_story(story: Story) -> str:
 
 
 def atomic_write(path: Path | str, text: str) -> bytes:
-    """Write `text` to `path` atomically, returning the exact bytes written.
-
-    The caller records a hash of these bytes, so the portal's own writes are never
-    mistaken for someone else's edit.
-    """
+    """Write `text` to `path` atomically, returning the exact bytes written."""
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     data = text.encode("utf-8")
@@ -129,14 +115,7 @@ class RenameResult:
 def rename_across_corpus(
     stories_dir: Path | str, kind: Kind, old: str, new: str
 ) -> RenameResult:
-    """Rewrite every story referencing `old` so it references `new` instead.
-
-    Works identically for characters, locations, and tags — the rename logic never
-    branches on kind (FR-031). Leaves zero occurrences of the old name (SC-010).
-
-    Returns the bytes written per file so the caller can update each hash, which is
-    what stops a rename from manufacturing its own conflicts.
-    """
+    """Rewrite every story referencing `old` so it references `new` instead."""
     stories_dir = Path(stories_dir)
     corpus = load_corpus(stories_dir)
     new = new.strip()

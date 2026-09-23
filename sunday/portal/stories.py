@@ -1,9 +1,4 @@
-"""Writing and editing stories, and reconciling files edited outside the portal.
-
-A save is not complete until three things land: the file, the store row with the
-hash of exactly those bytes, and — when relationships or display names changed —
-the `cast.yml` export.
-"""
+"""Writing and editing stories, and reconciling files edited outside the portal."""
 
 from __future__ import annotations
 
@@ -15,7 +10,7 @@ from flask import Blueprint, abort, flash, redirect, render_template, request, u
 
 from ..corpus import Story, StoryError, parse_partial_date, parse_story
 from ..store import ConflictState
-from ..writer import atomic_write, story_path, write_story
+from ..writer import story_path, write_story
 from . import current_corpus, current_store, paths
 
 bp = Blueprint("stories", __name__, url_prefix="/stories")
@@ -75,12 +70,41 @@ def _lines(value: str) -> tuple[str, ...]:
 
 
 def _suggestions():
-    """Names already in the corpus, offered so reuse is easier than retyping (FR-029)."""
+    """Names already in the corpus, offered so reuse is easier than retyping."""
     corpus = current_corpus()
     return {
         kind: [name.display for name in corpus.names_of_kind(kind)]
         for kind in ("character", "location", "tag")
     }
+
+
+#: The three name inputs on the story form: (field, singular kind, label, hint).
+_NAME_FIELDS = (
+    ("characters", "character", "Characters", "One per line. A new name needs no registration."),
+    ("locations", "location", "Locations", "One per line."),
+    ("tags", "tag", "Tags", "One per line. Not published, but kept consistent."),
+)
+
+
+def _name_fields(values: "FormValues") -> list[dict]:
+    suggestions = _suggestions()
+    return [
+        {"key": key, "label": label, "hint": hint,
+         "value": getattr(values, key), "suggestions": suggestions[singular]}
+        for key, singular, label, hint in _NAME_FIELDS
+    ]
+
+
+def _render_form(values: "FormValues", *, is_new: bool, problems=(), status: int = 200, **extra):
+    page = render_template(
+        "portal/story_form.html",
+        values=values,
+        name_fields=_name_fields(values),
+        problems=list(problems),
+        is_new=is_new,
+        **extra,
+    )
+    return (page, status) if status != 200 else page
 
 
 def _to_story(values: FormValues, existing: Story | None) -> tuple[Story | None, list[str]]:
@@ -143,8 +167,6 @@ def index():
     states = current_store().scan(corpus)
 
     # A store row whose file has vanished — deleted or renamed outside the portal.
-    # Reported rather than quietly forgotten, since the store is not the authority
-    # on what exists; the files are.
     known = {story.slug for story in corpus.stories}
     vanished = tuple(
         state for slug, state in sorted(states.items())
@@ -172,13 +194,7 @@ def forget(slug: str):
 
 @bp.get("/new")
 def new():
-    return render_template(
-        "portal/story_form.html",
-        values=FormValues(published=_dt.date.today().isoformat()),
-        suggestions=_suggestions(),
-        problems=[],
-        is_new=True,
-    )
+    return _render_form(FormValues(published=_dt.date.today().isoformat()), is_new=True)
 
 
 @bp.get("/<slug>/edit")
@@ -188,7 +204,7 @@ def edit(slug: str):
     if story is None:
         abort(404)
 
-    # A diverged file is not editable until the author has chosen a side (FR-041):
+    # A diverged file is not editable until the author has chosen a side:
     # saving over it would silently discard whichever version they meant to keep.
     state = current_store().state_of(slug, story.source_path)
     if state.blocked:
@@ -196,11 +212,8 @@ def edit(slug: str):
 
     store = current_store()
     story_id = store.story_id(slug)
-    return render_template(
-        "portal/story_form.html",
-        values=FormValues.from_story(story),
-        suggestions=_suggestions(),
-        problems=[],
+    return _render_form(
+        FormValues.from_story(story),
         is_new=False,
         story=story,
         notes=store.notes_for("story", story_id) if story_id else (),
@@ -225,30 +238,16 @@ def save(slug: str):
     story, problems = _to_story(values, existing)
 
     if story is None:
-        # Nothing is written, and the form comes back with what was typed (FR-028).
-        return (
-            render_template(
-                "portal/story_form.html",
-                values=values,
-                suggestions=_suggestions(),
-                problems=problems,
-                is_new=is_new,
-                story=existing,
-            ),
-            400,
-        )
+        # Nothing is written, and the form comes back with what was typed.
+        return _render_form(values, is_new=is_new, problems=problems, status=400, story=existing)
 
     target = existing.source_path if existing else story_path(paths().stories, story)
     if is_new and target.exists():
-        return (
-            render_template(
-                "portal/story_form.html",
-                values=values,
-                suggestions=_suggestions(),
-                problems=[f"A file already exists at {target.name}. Choose a different slug."],
-                is_new=True,
-            ),
-            400,
+        return _render_form(
+            values,
+            is_new=True,
+            problems=[f"A file already exists at {target.name}. Choose a different slug."],
+            status=400,
         )
 
     written = write_story(target, story)
@@ -284,44 +283,22 @@ def conflict(slug: str):
     if not state.blocked:
         return redirect(url_for("stories.edit", slug=slug))
 
-    row = current_store().story_row(slug)
     return render_template(
         "portal/conflict.html",
         slug=slug,
         story=story,
         disk_text=story.source_path.read_text(encoding="utf-8"),
-        store_text=row["last_written_text"] if row else None,
     )
 
 
 @bp.post("/<slug>/conflict")
 def resolve_conflict(slug: str):
-    """Resolve a divergence — but only ever the way the author chose.
-
-    Neither side is overwritten until this point. "Keep disk" adopts the file as it
-    stands; "keep store" rewrites it from the parsed story. There is deliberately no
-    default and no automatic merge.
-    """
+    """Adopt the on-disk version, unblocking edits."""
     corpus = current_corpus()
     story = corpus.by_slug(slug)
     if story is None or story.source_path is None:
         abort(404)
 
-    choice = request.form.get("choice")
-    store = current_store()
-
-    if choice == "disk":
-        store.record_write(slug, story.source_path, story.source_path.read_bytes())
-        flash("Kept the version on disk.", "success")
-    elif choice == "store":
-        row = store.story_row(slug)
-        previous = row["last_written_text"] if row else None
-        if not previous:
-            abort(400, description="No earlier version was recorded for this story.")
-        written = atomic_write(story.source_path, previous)
-        store.record_write(slug, story.source_path, written)
-        flash("Restored the version the portal last wrote.", "success")
-    else:
-        abort(400)
-
+    current_store().record_write(slug, story.source_path, story.source_path.read_bytes())
+    flash("Using the version on disk.", "success")
     return redirect(url_for("stories.edit", slug=slug))

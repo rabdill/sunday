@@ -1,13 +1,13 @@
 """The `cast.yml` export: what crosses the boundary, and what must not.
 
-MANDATORY per plan.md. This file is the only thing the store sends to the published
-site, so a mistake here either breaks the diagram or leaks private writing into a
-committed file.
+This file is the only thing the store sends to the published site, so a mistake here
+either breaks the diagram or leaks private writing into a committed file.
 """
 
 from __future__ import annotations
 
 import pytest
+import yaml
 
 from sunday.corpus import load_corpus
 from sunday.export import (
@@ -69,31 +69,24 @@ def test_an_empty_export_still_carries_the_generated_warning(tmp_path):
 
 # --------------------------------------------------------------- what leaks
 #
-# FR-038b / SC-018. Nothing published displays a description, so exporting one
-# would put private writing into a committed file for no reader's benefit.
+# Nothing published displays a description, so exporting one would put private
+# writing into a committed file for no reader's benefit.
 
 
 def test_a_profile_description_is_never_exported(populated, tmp_path):
     path = tmp_path / "cast.yml"
     write_cast(path, export_from_store(populated))
     text = path.read_text(encoding="utf-8")
+    data = yaml.safe_load(text) or {}
 
     assert "A private note about him." not in text
-    assert "description:" not in text.split("relationships:")[0], (
-        "no description field may appear in the display_names block"
-    )
+    for entry in data.get("display_names", []):
+        assert "description" not in entry, "a display_names entry must not carry a description"
 
 
 def test_the_export_contains_only_display_names_and_relationships(populated):
-    export = export_from_store(populated)
-    rendered = dump_cast(export)
-
-    keys = {
-        line.split(":")[0]
-        for line in rendered.splitlines()
-        if line and not line.startswith((" ", "-", "#"))
-    }
-    assert keys <= {"display_names", "relationships"}
+    data = yaml.safe_load(dump_cast(export_from_store(populated))) or {}
+    assert set(data) <= {"display_names", "relationships"}
 
 
 def test_a_subject_with_only_a_description_exports_nothing(scratch_corpus, tmp_path):
@@ -123,15 +116,15 @@ def test_relationships_are_emitted_in_sorted_order(tmp_path):
             RelationshipEntry("Adam", "Beth", "sister"),
         )
     )
-    rendered = dump_cast(export)
-    assert rendered.index("Adam\n") < rendered.index("Zoe")
+    data = yaml.safe_load(dump_cast(export))
+    assert [r["from"] for r in data["relationships"]] == ["Adam", "Zoe"]
 
 
 # --------------------------------------------------------------------- rebuild
 
 
 def test_rebuild_recovers_relationships_and_display_names(scratch_corpus, tmp_path):
-    """T106 / SC-011 — what survives losing the store, and what does not."""
+    """What survives losing the store, and what does not."""
     store_path = tmp_path / "store.db"
     cast_path = scratch_corpus / "cast.yml"
 

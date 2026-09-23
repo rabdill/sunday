@@ -1,14 +1,8 @@
 {% extends "portal/base.html" %}
+{% from "portal/_macros.html" import story_row with context %}
 {% block title %}{{ name.display }} — {{ site_title }}{% endblock %}
 
-{#
-  Everything known about one subject, in one place (FR-057) — and never generated
-  into the published site (FR-053).
-
-  A tag's page is deliberately the thinnest thing this template renders: a story
-  list, and nothing else. No profile, relationships, diagram, or notes, because
-  none of those concepts apply to a tag (FR-053b).
-#}
+{# Everything known about one subject, in one place. #}
 {% block content %}
 <h1>{{ name.display }}</h1>
 <p class="muted">
@@ -27,15 +21,7 @@
   <h2>Stories</h2>
   {% if stories %}
   <ul class="rows">
-    {% for story in stories %}
-    <li class="row">
-      <span class="row-main">
-        <a href="{{ url_for('stories.edit', slug=story.slug) }}">{{ story.title }}</a>
-        {% if story.draft %}<span class="tag-chip">draft</span>{% endif %}
-      </span>
-      <span class="row-meta">{{ story.published }}</span>
-    </li>
-    {% endfor %}
+    {% for story in stories %}{{ story_row(story) }}{% endfor %}
   </ul>
   {% else %}
   <p class="muted">No stories reference this name.</p>
@@ -96,26 +82,10 @@
   {% else %}
   <p class="muted">No relationships recorded. These are things you state, not things the stories imply.</p>
   {% endif %}
-  {% if has_relationships %}
   <p><a href="{{ url_for('relationships.index') }}">Record a relationship</a></p>
-  {% endif %}
 </section>
 
-<section class="panel">
-  <h2>Diagram</h2>
-  {% if graph_is_empty %}
-  <p class="muted">
-    Nothing to draw yet — this {{ name.kind }} has no co-appearances and no stated
-    relationships.
-  </p>
-  {% else %}
-  <div id="network" data-graph-inline="{{ graph_json }}" data-root="/"></div>
-  {% endif %}
-</section>
-
-{% if has_notes %}
 {% include "portal/_notes.html" with context %}
-{% endif %}
 
 <section class="panel">
   <h2>Profile</h2>
@@ -148,11 +118,4 @@
     <div class="actions"><button type="submit">Rename across the corpus</button></div>
   </form>
 </section>
-{% endblock %}
-
-{% block scripts %}
-{% if not is_tag and not graph_is_empty %}
-<script src="{{ url_for('static', filename='vendor/cytoscape.min.js') }}"></script>
-<script src="{{ url_for('static', filename='network.js') }}" defer></script>
-{% endif %}
 {% endblock %}

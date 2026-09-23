@@ -1,25 +1,15 @@
-"""Cast pages: the portal's richest surface, and where naming stays honest.
-
-These pages are authoring surfaces and are never generated into the published site
-(FR-053). A character's page gathers everything known about them in one place; a
-tag's page is deliberately the thinnest thing this route serves — a story list and
-nothing else, because a tag has no profile, no relationships, and no context
-(FR-053b).
-"""
+"""Cast pages: character, location, and tag authoring surfaces, never published."""
 
 from __future__ import annotations
-
-import json
 
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 
 from ..corpus import KINDS, Kind, load_corpus
-from ..graph import derived_context, subject_graph
+from ..graph import derived_context
 from ..review import findings as all_findings
-from ..review import probable_duplicates
 from ..store import SUBJECT_KINDS
 from ..writer import rename_across_corpus
-from . import current_cast, current_corpus, current_store, paths
+from . import current_corpus, current_store, paths
 
 bp = Blueprint("cast", __name__, url_prefix="/cast")
 
@@ -38,37 +28,47 @@ def index():
     subjects = store.subjects()
 
     by_key = {(s.kind, s.name): s for s in subjects}
-    findings = all_findings(corpus, subjects)
 
     flagged: dict[tuple[str, str], list] = {}
-    for finding in findings:
+    for finding in all_findings(corpus, subjects):
         flagged.setdefault((finding.name.kind, finding.name.display), []).append(finding)
 
-    rows = []
+    groups = []
     for kind in KINDS:
-        for name in corpus.names_of_kind(kind):
-            subject = by_key.get((kind, name.display))
-            rows.append(
-                {
-                    "name": name,
-                    "uses": corpus.use_count(name),
-                    "subject": subject,
-                    "findings": flagged.get((kind, name.display), []),
-                }
-            )
+        rows = [
+            {
+                "name": name,
+                "uses": corpus.use_count(name),
+                "subject": by_key.get((kind, name.display)),
+                "findings": flagged.get((kind, name.display), []),
+            }
+            for name in corpus.names_of_kind(kind)
+        ]
+        if rows:
+            groups.append((kind, rows))
 
-    return render_template("portal/cast_index.html", rows=rows, kinds=KINDS)
+    return render_template("portal/cast_index.html", groups=groups)
 
 
 @bp.get("/review/")
 def review():
-    """Every finding in one place (SC-007)."""
+    """Every finding in one place, split by kind for display."""
     corpus = current_corpus()
     store = current_store()
     store.sync_subjects(corpus)
+
+    buckets: dict[str, list] = {
+        "probable_duplicate": [], "orphaned_profile": [], "single_use": [], "unprofiled_name": []
+    }
+    for finding in all_findings(corpus, store.subjects()):
+        buckets[finding.kind].append(finding)
+
     return render_template(
         "portal/review.html",
-        findings=all_findings(corpus, store.subjects()),
+        duplicates=buckets["probable_duplicate"],
+        orphans=buckets["orphaned_profile"],
+        singles=buckets["single_use"],
+        unprofiled=buckets["unprofiled_name"],
     )
 
 
@@ -83,8 +83,7 @@ def show(kind: str, slug: str):
     store = current_store()
     store.sync_subjects(corpus)
 
-    # Drafts are included here and marked: the portal shows the author their whole
-    # world, not only the published part of it (FR-053a).
+    # Drafts are included and marked: the portal shows the author their whole world.
     stories = corpus.stories_for(name, include_drafts=True)
 
     if kind == "tag":
@@ -92,7 +91,6 @@ def show(kind: str, slug: str):
 
     subject = store.subject(kind, name.display)
     context = derived_context(corpus, name)
-    graph = subject_graph(corpus, current_cast(), name)
 
     relationships = store.relationships_for(subject.id) if subject else ()
     notes = store.notes_for("subject", subject.id) if subject else ()
@@ -105,8 +103,6 @@ def show(kind: str, slug: str):
         context=context,
         relationships=relationships,
         notes=notes,
-        graph_json=json.dumps(graph.to_json()),
-        graph_is_empty=len(graph.edges) == 0,
         is_tag=False,
         note_target_kind="subject",
         note_target_ref=f"{kind}/{slug}",
@@ -137,7 +133,7 @@ def save_profile(kind: str, slug: str):
 
 @bp.post("/<kind>/<slug>/dismiss")
 def dismiss(kind: str, slug: str):
-    """Decline a candidate profile — and remember it (FR-044)."""
+    """Decline a candidate profile — and remember it."""
     kind = _kind_or_404(kind)
     if kind not in SUBJECT_KINDS:
         abort(404)
@@ -158,7 +154,7 @@ def dismiss(kind: str, slug: str):
 
 @bp.post("/<kind>/<slug>/rename")
 def rename(kind: str, slug: str):
-    """Rename across the whole corpus (FR-031), leaving zero occurrences (SC-010)."""
+    """Rename across the whole corpus, leaving zero occurrences."""
     kind = _kind_or_404(kind)
     corpus = current_corpus()
     name = corpus.name_by_slug(kind, slug)

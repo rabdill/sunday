@@ -1,9 +1,6 @@
 """Hand-owned collection settings.
 
-`sunday.yml` belongs to the author. This module reads it and never writes it
-(FR-006) — the portal has no code path that touches it. Profiles deliberately do
-*not* live here: a file that is partly hand-owned and partly generated needs a
-merge strategy, and merge strategies are where sync bugs live (FR-006a).
+`sunday.yml` belongs to the author: read here, never written. See docs/DESIGN.md.
 """
 
 from __future__ import annotations

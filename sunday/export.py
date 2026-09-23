@@ -1,13 +1,6 @@
 """The `cast.yml` export — the store's outbound half of the boundary.
 
-The generator cannot read the store (FR-007), and CI has no store at all, so
-anything the published site needs must cross as a committed file. That is this
-file, and it carries only what the diagram consumes: stated relationships and
-display-name overrides (FR-038a).
-
-Profile descriptions deliberately do *not* cross. Nothing published displays a
-character biography, so exporting one would put private writing into a committed
-file for no reader's benefit (FR-038b).
+Carries only what the diagram consumes: stated relationships and display-name overrides. See docs/DESIGN.md.
 """
 
 from __future__ import annotations
@@ -55,12 +48,7 @@ class CastExport:
 
 
 def load_cast(path: Path | str) -> CastExport:
-    """Read `cast.yml`.
-
-    A missing file is *not* an error — a collection with no profiles and no
-    relationships is normal, and the diagram simply has no stated edges or label
-    overrides (contracts/cli.md).
-    """
+    """Read `cast.yml`. A missing file is not an error."""
     path = Path(path)
     if not path.exists():
         return CastExport()
@@ -105,11 +93,7 @@ def load_cast(path: Path | str) -> CastExport:
 
 
 def dump_cast(export: CastExport) -> str:
-    """Serialize a `CastExport` to the exact text of `cast.yml`.
-
-    Sorted throughout, so the committed file has legible diffs and the build stays
-    deterministic. Emits no `description` field for a profile — see FR-038b.
-    """
+    """Serialize a `CastExport` to the exact text of `cast.yml`."""
     payload: dict[str, object] = {}
 
     if export.display_names:
@@ -144,13 +128,7 @@ def write_cast(path: Path | str, export: CastExport) -> None:
 
 
 def export_from_store(store) -> CastExport:
-    """Build the export from current store state.
-
-    Carries display names and relationships only. A profile *description* is
-    deliberately not included: nothing on the published site displays one, so
-    exporting it would place private writing in a committed file for no reader
-    (FR-038b).
-    """
+    """Build the export from current store state."""
     display_names = {
         subject.name: subject.display_name
         for subject in store.subjects()

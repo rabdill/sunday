@@ -2,7 +2,7 @@
 
 The guard tests at the bottom protect two MUSTs that are otherwise enforced only
 by nobody having written the offending line yet — the portal must never touch git
-(FR-035) and must never write the hand-owned settings file (FR-006).
+and must never write the hand-owned settings file.
 """
 
 from __future__ import annotations
@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from conftest import module_identifiers
+from conftest import build_into, module_identifiers
 from sunday.portal import CollectionNotFound, create_app
 
 PORTAL_PACKAGE = Path(__file__).parent.parent / "sunday" / "portal"
@@ -40,7 +40,7 @@ def client(app):
 
 
 def test_refuses_to_start_outside_a_collection(tmp_path):
-    """FR-036: starting in the wrong directory should say so, not invent a collection."""
+    """Starting in the wrong directory should say so, not invent a collection."""
     with pytest.raises(CollectionNotFound, match="does not look like a Sunday collection"):
         create_app(
             stories_dir=tmp_path / "nope",
@@ -80,7 +80,7 @@ def test_build_route_generates_the_site(client, tmp_path):
 
 
 def test_build_failure_is_reported_in_the_browser(client, scratch_corpus):
-    """FR-034: the author is in the browser; that is where the cause belongs."""
+    """The author is in the browser; that is where the cause belongs."""
     (scratch_corpus / "stories" / "broken.md").write_text(
         "---\nnot: [valid\n---\n\nbody\n", encoding="utf-8"
     )
@@ -93,17 +93,10 @@ def test_build_failure_is_reported_in_the_browser(client, scratch_corpus):
 
 def test_portal_build_matches_a_cli_build(client, scratch_corpus, tmp_path):
     """A local build is the same code path as CI, so the result must match."""
-    from sunday.build import build_site
-
     client.post("/build")
 
     reference = tmp_path / "reference"
-    build_site(
-        stories_dir=scratch_corpus / "stories",
-        settings_path=scratch_corpus / "sunday.yml",
-        cast_path=scratch_corpus / "cast.yml",
-        output_dir=reference,
-    )
+    build_into(reference, scratch_corpus)
 
     portal_built = tmp_path / "site"
     for page in ("index.html", "archive/index.html", "graph.json"):
@@ -157,7 +150,7 @@ def test_saving_a_new_story_writes_a_file_the_generator_accepts(client, scratch_
 
 
 def test_a_no_op_save_preserves_meaning_and_unmanaged_keys(client, scratch_corpus):
-    """US3 scenario 2 / FR-027 — a round trip must lose nothing."""
+    """A round trip must lose nothing."""
     from sunday.corpus import parse_story
 
     path = scratch_corpus / "stories" / "the-lighthouse.md"
@@ -188,7 +181,7 @@ def test_a_no_op_save_preserves_meaning_and_unmanaged_keys(client, scratch_corpu
 
 
 def test_a_missing_required_field_refuses_and_explains(client, scratch_corpus):
-    """FR-028: nothing is written, and the reason is specific."""
+    """Nothing is written, and the reason is specific."""
     before = (scratch_corpus / "stories" / "the-fog.md").read_bytes()
 
     response = client.post(
@@ -233,7 +226,7 @@ def test_an_invalid_in_world_date_is_rejected_without_writing(client, scratch_co
 
 
 def test_new_names_need_no_registration(client, scratch_corpus):
-    """FR-008a: typing a brand new name is always allowed."""
+    """Typing a brand new name is always allowed."""
     from sunday.corpus import parse_story
 
     client.post(
@@ -273,17 +266,16 @@ def test_editing_a_diverged_story_redirects_to_the_conflict(client, scratch_corp
     assert "/conflict" in response.headers["Location"]
 
 
-def test_the_conflict_page_shows_both_versions(client, scratch_corpus):
+def test_the_conflict_page_shows_the_disk_version(client, scratch_corpus):
     client.get("/stories/")
     diverge(scratch_corpus)
 
     body = client.get("/stories/the-fog/conflict").get_data(as_text=True)
     assert "Edited in a text editor." in body, "the version on disk must be shown"
-    assert "On disk" in body and "What the portal last wrote" in body
-    assert body.count("diff-body") >= 2, "both versions must be presented, not just one"
+    assert "On disk" in body
 
 
-def test_neither_side_is_overwritten_until_the_author_chooses(client, scratch_corpus):
+def test_viewing_a_conflict_overwrites_nothing(client, scratch_corpus):
     client.get("/stories/")
     path = diverge(scratch_corpus)
     on_disk = path.read_bytes()
@@ -293,24 +285,14 @@ def test_neither_side_is_overwritten_until_the_author_chooses(client, scratch_co
     assert path.read_bytes() == on_disk, "merely viewing a conflict must change nothing"
 
 
-def test_keeping_the_disk_version_preserves_the_outside_edit(client, scratch_corpus):
+def test_adopting_the_disk_version_unblocks_editing(client, scratch_corpus):
     client.get("/stories/")
     path = diverge(scratch_corpus)
 
-    client.post("/stories/the-fog/conflict", data={"choice": "disk"}, follow_redirects=True)
+    client.post("/stories/the-fog/conflict", follow_redirects=True)
 
     assert "Edited in a text editor." in path.read_text(encoding="utf-8")
     assert client.get("/stories/the-fog/edit").status_code == 200, "no longer blocked"
-
-
-def test_keeping_the_portal_version_rewrites_the_file(client, scratch_corpus):
-    client.get("/stories/")
-    path = diverge(scratch_corpus)
-
-    client.post("/stories/the-fog/conflict", data={"choice": "store"}, follow_redirects=True)
-
-    assert "Edited in a text editor." not in path.read_text(encoding="utf-8")
-    assert client.get("/stories/the-fog/edit").status_code == 200
 
 
 def test_a_save_is_refused_while_a_story_is_conflicted(client, scratch_corpus):
@@ -353,7 +335,6 @@ def test_cast_index_flags_a_probable_duplicate(client):
 
 
 def test_review_page_gathers_every_finding_in_one_place(client):
-    """SC-007."""
     body = client.get("/cast/review/").get_data(as_text=True)
     assert "Probable duplicates" in body
     assert "Mara Vanse" in body
@@ -361,7 +342,7 @@ def test_review_page_gathers_every_finding_in_one_place(client):
 
 
 def test_a_character_page_gathers_everything_known(client):
-    """FR-057 — stories, derived context, relationships, and a diagram in one place."""
+    """Stories, derived context, and relationships in one place."""
     body = client.get("/cast/character/mara-vance").get_data(as_text=True)
 
     assert "The Lighthouse" in body                  # stories
@@ -369,7 +350,6 @@ def test_a_character_page_gathers_everything_known(client):
     assert "Elias Doyle" in body                     # co-appearing
     assert "First appearance" in body
     assert "Relationships" in body
-    assert "Diagram" in body
 
 
 def test_a_character_page_marks_drafts(client):
@@ -379,18 +359,17 @@ def test_a_character_page_marks_drafts(client):
 
 
 def test_a_tag_page_is_only_a_story_list(client):
-    """FR-053b: none of the character-specific concepts apply to a tag."""
+    """None of the character-specific concepts apply to a tag."""
     page = client.get("/cast/tag/correspondence").get_data(as_text=True)
     # Scope to the page's own content — the nav chrome links to other surfaces.
     body = page.split("<main>", 1)[1].split("</main>", 1)[0]
 
     assert "Letters Home" in body, "its stories are listed"
-    for absent in ("From the stories", "Relationships", "Diagram", "Save profile", "Notes"):
+    for absent in ("From the stories", "Relationships", "Save profile", "Notes"):
         assert absent not in body, f"a tag page must not offer {absent!r}"
 
 
 def test_renaming_leaves_no_occurrence_of_the_old_name(client, scratch_corpus):
-    """SC-010 / FR-031."""
     client.get("/cast/")  # adopt the corpus first
     client.post(
         "/cast/character/mara-vanse/rename",
@@ -439,7 +418,7 @@ def test_a_rename_does_not_manufacture_its_own_conflicts(client, scratch_corpus)
 
 
 def test_dismissing_a_candidate_is_remembered(client):
-    """FR-044: it does not come back, and the name keeps working."""
+    """It does not come back, and the name keeps working."""
     client.post("/cast/character/silas-thorne/dismiss", follow_redirects=True)
 
     review = client.get("/cast/review/").get_data(as_text=True)
@@ -452,7 +431,7 @@ def test_dismissing_a_candidate_is_remembered(client):
 def test_saving_a_profile_exports_the_display_name_but_not_the_description(
     client, scratch_corpus
 ):
-    """FR-038a/b — the export carries only what the published site consumes."""
+    """The export carries only what the published site consumes."""
     client.post(
         "/cast/character/elias-doyle/profile",
         data={"display_name": "Doyle", "description": "A private note about him."},
@@ -528,7 +507,7 @@ def test_recording_a_relationship_exports_it(client, scratch_corpus):
 
 
 def test_a_relationship_reaches_the_published_diagram(client, scratch_corpus, tmp_path):
-    """US9 end to end: recorded in the portal, drawn on the site."""
+    """End to end: recorded in the portal, drawn on the site."""
     import json
 
     from sunday.store import Store
@@ -583,7 +562,7 @@ def _portal_modules() -> list[Path]:
 
 
 def test_portal_performs_no_version_control_operations():
-    """T116 / FR-035: committing and pushing stay the author's responsibility."""
+    """Committing and pushing stay the author's responsibility."""
     forbidden = {"subprocess", "git", "pygit2", "dulwich", "os.system", "popen"}
     offenders: dict[str, set[str]] = {}
 
@@ -602,7 +581,7 @@ def test_portal_performs_no_version_control_operations():
 
 
 def test_portal_never_writes_the_settings_file():
-    """T117 / FR-006: `sunday.yml` is hand-owned and the portal never rewrites it."""
+    """`sunday.yml` is hand-owned and the portal never rewrites it."""
     offenders: dict[str, set[str]] = {}
 
     for module in _portal_modules():

@@ -1,11 +1,7 @@
 {% extends "portal/base.html" %}
 {% block title %}Cast — {{ site_title }}{% endblock %}
 
-{#
-  Every name the corpus uses, across all three kinds. Tags appear here on equal
-  footing for naming consistency (FR-032/032b) — a misspelled tag is as detectable
-  as a misspelled character — even though they never gain a profile.
-#}
+{# Every name the corpus uses, across all three kinds. #}
 {% block content %}
 <h1>Cast</h1>
 <p class="muted">
@@ -13,13 +9,11 @@
   uses it — nothing here needs registering.
 </p>
 
-{% for kind in kinds %}
-{% set group = rows | selectattr('name.kind', 'equalto', kind) | list %}
-{% if group %}
+{% for kind, rows in groups %}
 <section class="panel">
   <h2>{{ kind }}s</h2>
   <ul class="rows">
-    {% for row in group %}
+    {% for row in rows %}
     <li class="row">
       <span class="row-main">
         <a href="{{ url_for('cast.show', kind=kind, slug=row.name.slug) }}">{{ row.name.display }}</a>
@@ -44,6 +38,5 @@
     {% endfor %}
   </ul>
 </section>
-{% endif %}
 {% endfor %}
 {% endblock %}

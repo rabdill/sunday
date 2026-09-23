@@ -8,11 +8,6 @@
   that refused to publish over a spelling question would be the wrong shape for this.
 </p>
 
-{% set duplicates = findings | selectattr('kind', 'equalto', 'probable_duplicate') | list %}
-{% set orphans = findings | selectattr('kind', 'equalto', 'orphaned_profile') | list %}
-{% set singles = findings | selectattr('kind', 'equalto', 'single_use') | list %}
-{% set unprofiled = findings | selectattr('kind', 'equalto', 'unprofiled_name') | list %}
-
 <section class="panel">
   <h2>Probable duplicates</h2>
   {% if duplicates %}

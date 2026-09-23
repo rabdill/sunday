@@ -1,4 +1,5 @@
 {% extends "portal/base.html" %}
+{% from "portal/_macros.html" import story_row with context %}
 {% block title %}Stories — {{ site_title }}{% endblock %}
 
 {% block content %}
@@ -27,17 +28,7 @@
 
 <ul class="rows">
   {% for story in stories %}
-  {% set state = states.get(story.slug) %}
-  <li class="row">
-    <span class="row-main">
-      <a href="{{ url_for('stories.edit', slug=story.slug) }}">{{ story.title }}</a>
-      {% if story.draft %}<span class="tag-chip">draft</span>{% endif %}
-      {% if state and state.state.value == 'diverged' %}
-      <a class="tag-chip chip-warn" href="{{ url_for('stories.conflict', slug=story.slug) }}">conflict</a>
-      {% endif %}
-    </span>
-    <span class="row-meta">{{ story.published }}</span>
-  </li>
+  {{ story_row(story, states.get(story.slug)) }}
   {% else %}
   <li class="row"><span class="row-main muted">No stories yet.</span></li>
   {% endfor %}

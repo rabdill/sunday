@@ -1,12 +1,6 @@
 """The generator: committed files in, four kinds of static page out.
 
-This module must never import `sunday.store`. The published site derives from
-committed files alone (FR-007, Constitution II), which is what lets the build run
-in CI where no store exists — and a test asserts the rule rather than trusting it.
-
-Determinism is the other standing constraint (FR-016): every collection is sorted
-before it is written, and nothing timestamped or randomly ordered reaches the
-output. Two builds of unchanged sources produce byte-identical trees.
+Never imports the store; deterministic by construction. See docs/DESIGN.md.
 """
 
 from __future__ import annotations
@@ -50,12 +44,9 @@ class BuildResult:
 
 
 def prepare_output(output_dir: Path) -> None:
-    """Clear the output tree so deleted or renamed stories leave no orphan (FR-018).
+    """Clear the output tree so deleted or renamed stories leave no orphan.
 
-    Wipe-and-rebuild is the only approach that actually guarantees no stale page
-    survives. Because `--output` is user-supplied, a directory that exists, is
-    non-empty, and carries no build marker is refused rather than deleted — losing
-    someone's unrelated files to a mistyped flag is not an acceptable failure mode.
+    A non-empty directory with no build marker is refused rather than deleted.
     """
     output_dir = Path(output_dir)
     if output_dir.exists():
@@ -125,12 +116,7 @@ def build_site(
     cast_path: Path | str,
     output_dir: Path | str,
 ) -> BuildResult:
-    """Generate the complete published site.
-
-    Emits exactly four kinds of page — feed, network, archive, story — and nothing
-    else (FR-009a). No character, location, or tag pages: that material lives in the
-    portal (FR-013).
-    """
+    """Generate the complete published site: feed, network, archive, and story pages."""
     stories_dir = Path(stories_dir)
     output_dir = Path(output_dir)
 
@@ -150,7 +136,7 @@ def build_site(
     _write(
         output_dir / "index.html",
         env.get_template("site/index.html").render(
-            root="", items=_feed_items(corpus), **common
+            root="", home="./", items=_feed_items(corpus), **common
         ),
     )
     pages += 1
@@ -162,6 +148,7 @@ def build_site(
             output_dir / "stories" / story.slug / "index.html",
             story_template.render(
                 root="../../",
+                home="../../",
                 story=story,
                 body_html=Markup(render_markdown(story.body)),
                 published_display=format_date(story.published),
@@ -177,6 +164,7 @@ def build_site(
         output_dir / "archive" / "index.html",
         env.get_template("site/archive.html").render(
             root="../",
+            home="../",
             dated=[
                 {"story": s, "when": format_partial(s.occurs), "published_display": format_date(s.published)}
                 for s in dated
@@ -200,6 +188,7 @@ def build_site(
         output_dir / "network" / "index.html",
         env.get_template("site/network.html").render(
             root="../",
+            home="../",
             node_count=len(connection_graph.nodes),
             edge_count=len(connection_graph.edges),
             **common,
@@ -223,15 +212,7 @@ def build_site(
 
 
 def _naming_warnings(corpus: Corpus) -> tuple[str, ...]:
-    """Naming findings, reported but never fatal (FR-017a/b).
-
-    Editorial judgment belongs in the portal, ahead of the build (FR-032c). The
-    build repeats only the findings that suggest something is actually wrong —
-    probable duplicates — and stays quiet about single-use and unprofiled names,
-    which are ordinary states for a growing collection rather than mistakes.
-
-    Whatever it finds, it publishes anyway.
-    """
+    """Naming findings, reported but never fatal. The build publishes regardless."""
     from .review import describe_finding, probable_duplicates
 
     return tuple(describe_finding(f) for f in probable_duplicates(corpus))

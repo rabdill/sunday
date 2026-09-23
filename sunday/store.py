@@ -1,18 +1,13 @@
 """The authoring store: authoritative for authoring, disposable by design.
 
-The store arbitrates conflicts and holds material no story file represents —
-profiles, notes, relationships, dismissal decisions (FR-037). It is excluded from
-version control and rebuildable from the committed files (FR-040), which is the
-trade that keeps a binary out of git.
+Holds only what no story file represents — profiles, notes, relationships,
+dismissals — plus the hash of what the portal last wrote to each story, used to
+detect edits made outside the portal. Excluded from version control and
+rebuildable from the committed files. See docs/DESIGN.md for the boundary and the
+rebuild trade-offs.
 
-**Losing it must never lose a story** (FR-042). Story text is not kept here; only
-the hash of what the portal last wrote, which is what conflict detection needs.
-The file is read from disk on demand, so "no story exists only in the store" is
-obvious rather than argued.
-
-Hand-written SQL over stdlib `sqlite3`. Six tables do not justify an ORM, and a
-migration framework exists to protect data you cannot reconstruct — this store is
-explicitly reconstructible, so `delete and rebuild` is a legitimate upgrade path.
+Hand-written SQL over stdlib `sqlite3`; the store is reconstructible, so a schema
+bump rebuilds rather than migrates.
 """
 
 from __future__ import annotations
@@ -28,12 +23,10 @@ from typing import Iterable, Literal
 from .corpus import Corpus, Kind, Name, load_corpus
 from .export import CastExport, load_cast
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 SubjectKind = Literal["character", "location"]
-#: Tags deliberately get no `subjects` row. A subject row exists to give notes and
-#: relationships something stable to follow across a rename; tags have neither, so a
-#: row for one would be state with no consumer (see data-model.md).
+#: Tags deliberately get no `subjects` row — nothing follows a tag across a rename.
 SUBJECT_KINDS: tuple[SubjectKind, ...] = ("character", "location")
 
 SCHEMA = """
@@ -46,15 +39,7 @@ CREATE TABLE IF NOT EXISTS stories (
     id                INTEGER PRIMARY KEY,
     slug              TEXT NOT NULL UNIQUE,
     source_path       TEXT NOT NULL,
-    last_written_hash TEXT,
-    -- The exact text last written, so a conflict offers two real versions rather
-    -- than a notification. FR-041 requires the author be able to *choose*, and
-    -- without this there is nothing to choose between: the disk copy would be the
-    -- only version that still exists. This does not make the store authoritative
-    -- for story text — the file is written on every save and always holds it too,
-    -- so losing the store still loses no fiction (FR-042).
-    last_written_text TEXT,
-    last_written_at   TEXT
+    last_written_hash TEXT
 );
 
 CREATE TABLE IF NOT EXISTS subjects (
@@ -82,22 +67,11 @@ CREATE TABLE IF NOT EXISTS relationships (
     description     TEXT NOT NULL DEFAULT '',
     directed        INTEGER NOT NULL DEFAULT 0
 );
-
-CREATE TABLE IF NOT EXISTS conflicts (
-    story_id    INTEGER PRIMARY KEY REFERENCES stories(id) ON DELETE CASCADE,
-    detected_at TEXT NOT NULL,
-    disk_hash   TEXT NOT NULL
-);
 """
 
 
 def content_hash(data: bytes | str) -> str:
-    """SHA-256 of exactly the bytes on disk.
-
-    Content, not modification time: a `git checkout` rewrites timestamps on every
-    file, and an author trained to click through a false conflict prompt is worse
-    off than one who never sees it.
-    """
+    """SHA-256 of exactly the bytes on disk."""
     if isinstance(data, str):
         data = data.encode("utf-8")
     return hashlib.sha256(data).hexdigest()
@@ -125,7 +99,7 @@ class StoryState:
 
     @property
     def blocked(self) -> bool:
-        """Editing a diverged story is blocked until the author resolves it (FR-041)."""
+        """Editing a diverged story is blocked until the author resolves it."""
         return self.state is ConflictState.DIVERGED
 
 
@@ -186,8 +160,7 @@ class RebuildReport:
         return "\n".join(lines)
 
 
-#: Never exported, so never recoverable by a rebuild. Named explicitly rather than
-#: discovered by the author later (FR-042).
+#: Never exported, so never recoverable by a rebuild.
 UNRECOVERABLE = ("notes", "dismissed candidates", "profile descriptions")
 
 
@@ -267,30 +240,18 @@ class Store:
         return int(row["id"]) if row else None
 
     def record_write(self, slug: str, path: Path | str, data: bytes | str) -> None:
-        """Record the exact bytes the portal just wrote.
-
-        Called on every save, so the portal's own writes never look like someone
-        else's edit.
-        """
+        """Record the hash of the bytes the portal just wrote."""
         if isinstance(data, str):
             data = data.encode("utf-8")
-        digest = content_hash(data)
         self.connection.execute(
             """
-            INSERT INTO stories
-                (slug, source_path, last_written_hash, last_written_text, last_written_at)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO stories (slug, source_path, last_written_hash)
+            VALUES (?, ?, ?)
             ON CONFLICT(slug) DO UPDATE SET
                 source_path = excluded.source_path,
-                last_written_hash = excluded.last_written_hash,
-                last_written_text = excluded.last_written_text,
-                last_written_at = excluded.last_written_at
+                last_written_hash = excluded.last_written_hash
             """,
-            (slug, str(path), digest, data.decode("utf-8", errors="replace"), _now()),
-        )
-        self.connection.execute(
-            "DELETE FROM conflicts WHERE story_id = (SELECT id FROM stories WHERE slug = ?)",
-            (slug,),
+            (slug, str(path), content_hash(data)),
         )
         self.connection.commit()
 
@@ -314,11 +275,7 @@ class Store:
         return StoryState(slug, ConflictState.DIVERGED, path)
 
     def scan(self, corpus: Corpus) -> dict[str, StoryState]:
-        """Classify every story, and adopt any the store has never seen.
-
-        A file the portal did not write is *untracked*, not conflicted — adopting it
-        silently is right, because there is no earlier version to disagree with.
-        """
+        """Classify every story, and adopt any the store has never seen."""
         states: dict[str, StoryState] = {}
         for story in corpus.stories:
             state = self.state_of(story.slug, story.source_path)
@@ -327,18 +284,6 @@ class Store:
                     story.slug, story.source_path, story.source_path.read_bytes()
                 )
                 state = StoryState(story.slug, ConflictState.CLEAN, story.source_path)
-            if state.state is ConflictState.DIVERGED and story.source_path:
-                self.connection.execute(
-                    """
-                    INSERT INTO conflicts (story_id, detected_at, disk_hash)
-                    VALUES ((SELECT id FROM stories WHERE slug = ?), ?, ?)
-                    ON CONFLICT(story_id) DO UPDATE SET
-                        detected_at = excluded.detected_at,
-                        disk_hash = excluded.disk_hash
-                    """,
-                    (story.slug, _now(), content_hash(story.source_path.read_bytes())),
-                )
-                self.connection.commit()
             states[story.slug] = state
 
         known = {row["slug"] for row in self.connection.execute("SELECT slug FROM stories")}
@@ -355,11 +300,7 @@ class Store:
     # -- subjects
 
     def sync_subjects(self, corpus: Corpus) -> int:
-        """Ensure a `subjects` row exists for every character and location in use.
-
-        Preserves existing ids, so notes and relationships keep pointing at the same
-        subject across reloads.
-        """
+        """Ensure a `subjects` row exists for every character and location in use."""
         added = 0
         for kind in SUBJECT_KINDS:
             for name in corpus.names_of_kind(kind):
@@ -420,7 +361,7 @@ class Store:
         self.connection.commit()
 
     def dismiss(self, kind: str, name: str) -> None:
-        """Remember that the author declined a candidate profile (FR-044)."""
+        """Remember that the author declined a candidate profile."""
         subject = self.ensure_subject(kind, name)
         self.connection.execute(
             "UPDATE subjects SET dismissed = 1 WHERE id = ?", (subject.id,)
@@ -428,7 +369,7 @@ class Store:
         self.connection.commit()
 
     def rename_subject(self, kind: str, old: str, new: str) -> None:
-        """Rename in place, so notes and relationships follow the id (FR-047, FR-050)."""
+        """Rename in place, so notes and relationships follow the id."""
         existing = self.subject(kind, new)
         subject = self.subject(kind, old)
         if subject is None:
@@ -457,9 +398,6 @@ class Store:
         self.connection.commit()
 
     # -- notes
-    #
-    # Never exported, never published (FR-046). Attached to an id, so they survive a
-    # rename (FR-047). Lost with the store, and the UI says so.
 
     def notes_for(self, target_kind: str, target_id: int) -> tuple[Note, ...]:
         rows = self.connection.execute(
@@ -508,9 +446,6 @@ class Store:
         self.connection.commit()
 
     # -- relationships
-    #
-    # Maintained independently of what stories say (FR-049), referenced by subject id
-    # so a rename cannot break them (FR-050).
 
     def _relationship_from(self, row: sqlite3.Row) -> Relationship:
         return Relationship(
@@ -580,13 +515,7 @@ class Store:
 def rebuild_store(
     *, store_path: Path | str, stories_dir: Path | str, cast_path: Path | str
 ) -> RebuildReport:
-    """Discard the store and rebuild it from the committed files.
-
-    Recovers stories and their hashes from the corpus, subjects from the names in
-    use, and profiles and relationships from `cast.yml`. Cannot recover notes,
-    dismissals, or profile descriptions — none of the three is exported, and the
-    report says so rather than letting the author find out later.
-    """
+    """Discard the store and rebuild it from the committed files."""
     store_path = Path(store_path)
     if store_path.exists():
         store_path.unlink()

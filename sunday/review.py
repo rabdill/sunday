@@ -1,13 +1,4 @@
-"""Editorial review: probable naming mistakes, surfaced while writing.
-
-Because a name exists by being used (FR-008a), a typo is valid input that creates a
-real second character. Nothing can prevent that at write time, so detection after
-the fact is the only safeguard — and it belongs in the portal, ahead of the build
-(FR-032c), where the author is already working and can act on it.
-
-None of these findings ever fails a build (FR-017a). A publication step that
-refuses to publish over a spelling question is the wrong shape for this system.
-"""
+"""Editorial review: probable naming mistakes, surfaced while writing."""
 
 from __future__ import annotations
 
@@ -38,11 +29,7 @@ class Finding:
 
 
 def edit_distance(left: str, right: str, *, limit: int = 2) -> int:
-    """Levenshtein distance, abandoned once it exceeds `limit`.
-
-    Bounded because we only care whether two names are *close*; how far apart two
-    unrelated names are is not information anybody needs.
-    """
+    """Levenshtein distance, abandoned once it exceeds `limit`."""
     if abs(len(left) - len(right)) > limit:
         return limit + 1
     if left == right:
@@ -70,11 +57,7 @@ def _threshold_for(text: str) -> int:
 
 
 def probable_duplicates(corpus: Corpus, kind: Kind | None = None) -> list[Finding]:
-    """Names close enough that one is probably a misspelling of the other (FR-032).
-
-    Runs over characters, locations, and tags alike — a misspelled tag is as
-    detectable as a misspelled character.
-    """
+    """Names close enough that one is probably a misspelling of the other."""
     findings: list[Finding] = []
     kinds = (kind,) if kind else ("character", "location", "tag")
 
@@ -110,7 +93,7 @@ def probable_duplicates(corpus: Corpus, kind: Kind | None = None) -> list[Findin
 
 
 def single_use(corpus: Corpus) -> list[Finding]:
-    """Names used by exactly one story — the usual shape of a typo (FR-032b)."""
+    """Names used by exactly one story — the usual shape of a typo."""
     return [
         Finding("single_use", name, detail="used by one story")
         for name in corpus.all_names()
@@ -119,10 +102,7 @@ def single_use(corpus: Corpus) -> list[Finding]:
 
 
 def orphaned_profiles(corpus: Corpus, subjects: Iterable) -> list[Finding]:
-    """Profiles describing a name no story uses (FR-032a).
-
-    Tags have no profiles, so this never applies to them.
-    """
+    """Profiles describing a name no story uses."""
     findings: list[Finding] = []
     for subject in subjects:
         if not subject.has_profile:
@@ -144,7 +124,7 @@ def orphaned_profiles(corpus: Corpus, subjects: Iterable) -> list[Finding]:
 
 
 def unprofiled_names(corpus: Corpus, subjects: Iterable) -> list[Finding]:
-    """Characters and locations with no profile and no recorded dismissal (FR-033a)."""
+    """Characters and locations with no profile and no recorded dismissal."""
     by_key = {(s.kind, s.name): s for s in subjects}
     findings: list[Finding] = []
 

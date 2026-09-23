@@ -79,17 +79,18 @@ to reach anything.
 
 ## What stays in the portal
 
-Cast pages, profile descriptions, private notes, and per-character diagrams are
-authoring surfaces. They are never generated into the site. The export carries only what
-the diagram consumes — stated relationships and display names — so nothing in a
-committed file is invisible to readers.
+Cast pages, profile descriptions, and private notes are authoring surfaces. They are
+never generated into the site. The export carries only what the diagram consumes —
+stated relationships and display names — so nothing in a committed file is invisible to
+readers.
 
 ## Editing outside the portal
 
 Supported, deliberately. Open a story in any text editor. If the portal later finds the
-file changed since it last wrote it, it shows you both versions and asks which to keep.
-Detection is by content hash, not timestamp, so `git checkout` does not manufacture
-false conflicts.
+file changed since it last wrote it, it flags the divergence and blocks editing until
+you review the version on disk and continue — it never silently overwrites your outside
+edit, and deeper history lives in git. Detection is by content hash, not timestamp, so
+`git checkout` does not manufacture false conflicts.
 
 ## Naming consistency
 
@@ -131,7 +132,7 @@ error, however green the build was. The site then lands at
 project path is as good as a domain root.
 
 The build never fails on a naming warning — a near-duplicate spelling is an editorial
-question, not a broken build (FR-017a). Warnings print in the CI log and the site ships.
+question, not a broken build. Warnings print in the CI log and the site ships.
 
 The collection committed here is a set of selections from Mary Shelley's *Frankenstein*
 (1818, public domain), cut from the Project Gutenberg text. It is real content rather than
@@ -149,6 +150,12 @@ Coverage concentrates where silent corruption is possible: frontmatter parsing, 
 normalization, the connection graph, conflict detection, and the export boundary. Two
 structural guards assert the architecture rather than trusting it — that `build.py`
 never imports the store, and that the generated tree contains only the four page kinds.
+
+## Working on the code
+
+[`docs/DESIGN.md`](docs/DESIGN.md) records why the system is shaped the way it is — the
+boundary, name identity, conflict detection, and the decisions log. [`CLAUDE.md`](CLAUDE.md)
+is the terse operating guide: architecture, invariants, and conventions.
 
 ## Not here yet
 

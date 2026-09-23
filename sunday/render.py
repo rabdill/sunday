@@ -1,10 +1,6 @@
 """Markdown rendering and date display.
 
-Two rules govern this module. Markdown output must be *defined by a spec* rather
-than by accumulated quirks, because FR-016 demands byte-identical rebuilds — so
-CommonMark, with nothing enabled beyond it. And a partial in-world date must be
-displayed at its true precision (FR-023b): "1921" stays "1921" and never becomes
-"1 January 1921", which would be a fabrication.
+CommonMark only; partial dates display at their true precision. See docs/DESIGN.md.
 """
 
 from __future__ import annotations
@@ -21,18 +17,13 @@ _MONTHS = (
 )
 
 #: CommonMark defaults, no plugins. Extensions get added when a story needs one,
-#: not in advance (Constitution II).
+#: not in advance.
 _md = MarkdownIt("commonmark")
 
 
 def render_markdown(text: str) -> str:
     """Render a story body to HTML."""
     return _md.render(text)
-
-
-def render_inline(text: str) -> str:
-    """Render a short fragment (a profile description) without wrapping it in <p>."""
-    return _md.renderInline(text)
 
 
 def format_date(value: _dt.date) -> str:
@@ -47,7 +38,3 @@ def format_partial(value: PartialDate) -> str:
     if value.precision is Precision.MONTH:
         return f"{_MONTHS[value.month - 1]} {value.year}"
     return str(value.year)
-
-
-def format_occurs(value: PartialDate | None) -> str:
-    return format_partial(value) if value is not None else "Undated"

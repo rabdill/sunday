@@ -116,7 +116,8 @@ no extensions, for the same reason.
 In-world dates tolerate imprecision: `1921`, `1921-03`, and `1921-03-04` are all
 first-class and displayed at the precision the author gave, never padded into a
 fabricated day. Padding exists only inside the sort key, for ordering. Undated
-stories are set aside in the archive rather than given a guessed position.
+stories are set aside at the end of the chronological feed rather than given a
+guessed position.
 
 ## Decisions log — removed before 1.0
 
@@ -135,6 +136,11 @@ justification. Recorded here so the reasoning is not lost:
 - **`has_*` blueprint flags** — chrome that showed nav/sections only for "wired-up"
   surfaces, from a phased rollout that is complete. All blueprints always register, so
   every guard was permanently true.
+- **A separate `/archive/` page** — the chronological listing had its own page, and the
+  only pointer to how it differed from the feed was a footer line. Merged into the feed
+  as a second order (`/chronological/`) behind a visible sort toggle, using the
+  archive's compact date-and-title layout for both orders. Each order is still its own
+  static page, so both work without JavaScript.
 - **`stories.last_written_at`, `render.format_occurs`, `render.render_inline`,
   `corpus.iter_story_files`** — written-but-never-read state and unreferenced
   functions.

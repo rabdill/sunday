@@ -1,4 +1,4 @@
-"""The connection graph, and the archive's chronology.
+"""The connection graph, and the feed's chronological order.
 
 Derived from the corpus and cast export on every build, never cached. See docs/DESIGN.md.
 """
@@ -178,13 +178,13 @@ def build_graph(corpus: Corpus, cast: CastExport | None = None) -> ConnectionGra
     return ConnectionGraph(nodes=nodes, edges=edges)
 
 
-# ---------------------------------------------------------------------- the archive
+# ------------------------------------------------------------ chronological order
 
 
-def archive_order(corpus: Corpus) -> tuple[tuple[Story, ...], tuple[Story, ...]]:
+def chronological_order(corpus: Corpus) -> tuple[tuple[Story, ...], tuple[Story, ...]]:
     """Split published stories into in-world chronology and an undated group."""
     published = corpus.published()
-    dated = tuple(sorted((s for s in published if s.occurs), key=lambda s: s.archive_sort_key))
+    dated = tuple(sorted((s for s in published if s.occurs), key=lambda s: s.chronological_sort_key))
     undated = tuple(
         sorted((s for s in published if not s.occurs), key=lambda s: (s.published, s.slug), reverse=True)
     )

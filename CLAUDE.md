@@ -22,8 +22,8 @@ sunday store rebuild        # discard and rebuild the local store from files
 
 Two programs share one read-only corpus loader (`corpus.py`):
 
-- **Generator** (`build.py`, `graph.py`, `render.py`): committed files in, four kinds
-  of static page out — feed, per-story, archive, network. Deterministic.
+- **Generator** (`build.py`, `graph.py`, `render.py`): committed files in, three kinds
+  of static page out — feed (rendered once per order), per-story, network. Deterministic.
 - **Portal** (`portal/`): a local Flask app that edits story files and keeps a
   SQLite **store** (`store.py`) of material no file represents.
 
@@ -35,7 +35,7 @@ portal-authored data (relationships, display names) reaches the generator.
 1. **`build.py` never imports or references the store.** The published site derives
    from committed files alone, so it builds in CI where no store exists.
    (`tests/test_build.py` asserts this via AST.)
-2. **The site is exactly four page kinds** — feed, story, archive, network — and no
+2. **The site is exactly three page kinds** — feed, story, network — and no
    character/location/tag pages. That material is portal-only.
 3. **Builds are deterministic:** every collection is sorted before it is written; no
    timestamps or random order reach output. Two builds of unchanged sources are

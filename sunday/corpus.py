@@ -195,9 +195,9 @@ class Story:
         }[kind]
 
     @property
-    def archive_sort_key(self) -> tuple[_dt.date, int, _dt.date, str]:
-        """Total order for the archive. Documented tie-break, so builds agree."""
-        assert self.occurs is not None, "archive_sort_key requires an in-world date"
+    def chronological_sort_key(self) -> tuple[_dt.date, int, _dt.date, str]:
+        """Total order for the chronological feed. Documented tie-break, so builds agree."""
+        assert self.occurs is not None, "chronological_sort_key requires an in-world date"
         return (self.occurs.sort_date, int(self.occurs.precision), self.published, self.slug)
 
 

@@ -44,12 +44,13 @@ def test_markdown_is_rendered_not_shown_as_markup(site):
 
 # --------------------------------------------------------------------- page inventory
 #
-# Exactly four kinds of page, and nothing else.
+# Exactly three kinds of page — the feed (once per order), story, network — and
+# nothing else.
 
 
-def test_only_the_four_page_kinds_are_generated(site):
+def test_only_the_three_page_kinds_are_generated(site):
     pages = {p.relative_to(site).as_posix() for p in site.rglob("*.html")}
-    expected = {"index.html", "archive/index.html", "network/index.html"} | {
+    expected = {"index.html", "chronological/index.html", "network/index.html"} | {
         f"stories/{slug}/index.html" for slug in PUBLISHED_SLUGS
     }
     assert pages == expected
@@ -65,10 +66,10 @@ def test_no_character_location_or_tag_pages_exist(site):
 
 
 def test_a_draft_appears_nowhere_in_the_output(site):
-    """Not the feed, not the archive, not the graph, not its own address."""
+    """Not the feed in either order, not the graph, not its own address."""
     assert not (site / "stories" / "unfinished").exists()
 
-    for page in ("index.html", "archive/index.html", "graph.json"):
+    for page in ("index.html", "chronological/index.html", "graph.json"):
         text = read(site / page)
         assert "Unfinished" not in text
         assert "unfinished" not in text
@@ -115,10 +116,33 @@ def test_feed_html_contains_every_story_regardless_of_filter(site):
 
 
 def test_feed_items_carry_filter_data_attributes(site):
-    page = read(site / "index.html")
-    assert 'data-characters="' in page
-    assert 'data-locations="' in page
-    assert "mara-vance" in page
+    for page in ("index.html", "chronological/index.html"):
+        text = read(site / page)
+        assert 'data-characters="' in text
+        assert 'data-locations="' in text
+        assert "mara-vance" in text
+
+
+def test_chronological_feed_orders_by_in_world_date_with_undated_set_aside(site):
+    page = read(site / "chronological" / "index.html")
+    dated = ("Winter Crossing", "The Fog", "The Lighthouse", "Letters Home")
+    positions = [page.index(title) for title in dated]
+    assert positions == sorted(positions)
+
+    undated = page.split("<h2>Undated</h2>", 1)[1]
+    assert "The Keeper" in undated
+    assert not any(title in undated for title in dated)
+
+
+def test_each_order_links_to_the_other_and_marks_itself_current(site):
+    for page, current, other in (
+        ("index.html", './" aria-current="page">Newest first', 'chronological/">'),
+        ("chronological/index.html", '../chronological/" aria-current="page">', '"../">Newest first'),
+    ):
+        text = read(site / page)
+        assert current in text
+        assert other in text
+        assert text.count('aria-current="page"') == 1
 
 
 # ----------------------------------------------------------------------- determinism
@@ -221,9 +245,9 @@ def test_an_empty_corpus_builds_an_empty_but_valid_site(tmp_path):
     build_into(out, corpus_dir)
 
     assert (out / "index.html").exists()
-    assert (out / "archive" / "index.html").exists()
     assert json.loads(read(out / "graph.json")) == {"nodes": [], "edges": []}
-    assert "No stories published yet" in read(out / "archive" / "index.html")
+    for page in ("index.html", "chronological/index.html"):
+        assert "No stories published yet" in read(out / page)
 
 
 def test_a_missing_settings_file_is_a_named_error(tmp_path):

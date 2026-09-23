@@ -99,7 +99,7 @@ def test_portal_build_matches_a_cli_build(client, scratch_corpus, tmp_path):
     build_into(reference, scratch_corpus)
 
     portal_built = tmp_path / "site"
-    for page in ("index.html", "archive/index.html", "graph.json"):
+    for page in ("index.html", "chronological/index.html", "graph.json"):
         assert (portal_built / page).read_text(encoding="utf-8") == (
             reference / page
         ).read_text(encoding="utf-8")

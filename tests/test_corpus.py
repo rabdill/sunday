@@ -102,7 +102,7 @@ def test_duplicate_slug_names_both_files(broken_dir, tmp_path):
 
 # ----------------------------------------------------------------- partial dates
 #
-# All three forms, and the sort key that orders the archive.
+# All three forms, and the sort key behind the chronological order.
 
 
 def test_all_three_date_precisions_parse(corpus):
@@ -132,7 +132,7 @@ def test_partial_dates_are_never_padded_into_a_fabricated_day(corpus):
 def test_sort_key_orders_by_date_then_precision(corpus):
     by_slug = {s.slug: s for s in corpus.stories}
     # Same year: the bare year sorts before the more precise March.
-    assert by_slug["the-fog"].archive_sort_key < by_slug["the-lighthouse"].archive_sort_key
+    assert by_slug["the-fog"].chronological_sort_key < by_slug["the-lighthouse"].chronological_sort_key
 
 
 def test_sort_key_tie_break_is_total_and_deterministic(corpus):
@@ -140,9 +140,9 @@ def test_sort_key_tie_break_is_total_and_deterministic(corpus):
     by_slug = {s.slug: s for s in corpus.stories}
     a, b = by_slug["letters-home"], by_slug["the-second-letter"]
     assert a.occurs.sort_date == b.occurs.sort_date
-    assert a.archive_sort_key != b.archive_sort_key
+    assert a.chronological_sort_key != b.chronological_sort_key
     # the-second-letter was published earlier, so it sorts first
-    assert b.archive_sort_key < a.archive_sort_key
+    assert b.chronological_sort_key < a.chronological_sort_key
 
 
 # ------------------------------------------------------------------ normalization

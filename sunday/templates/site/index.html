@@ -1,40 +1,54 @@
-{# The feed: every published story, newest first. #}
+{# The feed: every published story, in one of two orders. #}
 {% extends "site/base.html" %}
+{% block title %}{% if order == "chronological" %}Story chronology — {% endif %}{{ site_title }}{% endblock %}
 {% block main %}
+  <h1>Stories</h1>
+
   <div class="filter-banner" id="feed-filter-banner" hidden>
     <p>Showing stories with <strong id="feed-filter-label"></strong>.
-      <a href="{{ home }}" id="feed-filter-clear">Show everything</a></p>
+      <a href="./" id="feed-filter-clear">Show everything</a></p>
   </div>
 
   <p class="filter-empty" id="feed-filter-empty" hidden>
     Nothing published under that name yet.
-    <a href="{{ home }}">Show everything</a>
+    <a href="./">Show everything</a>
   </p>
 
-{% if items %}
-  <ul class="feed" id="feed">
-{% for item in items %}
-    <li class="feed-item"
-        data-characters="{{ item.character_slugs }}"
-        data-locations="{{ item.location_slugs }}">
-      <h2><a href="{{ root }}stories/{{ item.story.slug }}/">{{ item.story.title }}</a></h2>
-      <p class="dates">
-        <span class="published">Published {{ item.published_display }}</span>
-{% if item.occurs_display %}
-        <span class="occurs">{{ item.occurs_display }}</span>
-{% endif %}
-      </p>
-    </li>
+  <nav class="sort" aria-label="Sort order">
+{% for option in orders %}
+    <a href="{{ option.href }}"{% if option.key == order %} aria-current="page"{% endif %}>{{ option.label }}</a>
 {% endfor %}
-  </ul>
+  </nav>
+
+{% if sections %}
+  <div id="feed">
+{% for section in sections %}
+    <section class="feed-section">
+{% if section.heading %}
+      <h2>{{ section.heading }}</h2>
+{% endif %}
+      <ul class="feed-list">
+{% for entry in section.entries %}
+        <li class="feed-entry"
+            data-characters="{{ entry.character_slugs }}"
+            data-locations="{{ entry.location_slugs }}">
+          <span class="feed-when">{{ entry.when }}</span>
+          <span class="feed-what">
+            <a href="{{ root }}stories/{{ entry.story.slug }}/">{{ entry.story.title }}</a>
+          </span>
+        </li>
+{% endfor %}
+      </ul>
+    </section>
+{% endfor %}
+  </div>
 {% else %}
   <p>No stories published yet.</p>
 {% endif %}
 {% endblock %}
 
 {% block footer %}
-  <p>{{ site_title }} — short fiction.
-    <a href="{{ root }}archive/">Read in chronological order</a>.</p>
+  <p>{{ site_title }} — short fiction.</p>
 {% endblock %}
 
 {% block scripts %}<script src="{{ root }}feed-filter.js"></script>{% endblock %}

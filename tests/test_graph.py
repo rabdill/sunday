@@ -1,4 +1,4 @@
-"""The connection graph and the archive's chronology.
+"""The connection graph and the feed's chronological order.
 
 The character/location graph is exactly where a filtering bug that drops a story
 from a character's page is invisible — nothing errors, the reader simply never
@@ -10,7 +10,7 @@ from __future__ import annotations
 import pytest
 
 from sunday.export import CastExport, RelationshipEntry
-from sunday.graph import archive_order, build_graph, derived_context, node_id
+from sunday.graph import chronological_order, build_graph, derived_context, node_id
 
 
 @pytest.fixture
@@ -188,11 +188,11 @@ def test_nodes_and_edges_are_deterministically_ordered(corpus):
     assert [n.id for n in first.nodes] == sorted(n.id for n in first.nodes)
 
 
-# ------------------------------------------------------------------- the archive
+# ------------------------------------------------------------ chronological order
 
 
-def test_archive_orders_by_in_world_chronology_not_publication(corpus):
-    dated, _ = archive_order(corpus)
+def test_chronological_orders_by_in_world_chronology_not_publication(corpus):
+    dated, _ = chronological_order(corpus)
     assert [s.slug for s in dated] == [
         "winter-crossing",   # 1919
         "the-fog",           # 1921
@@ -204,13 +204,13 @@ def test_archive_orders_by_in_world_chronology_not_publication(corpus):
 
 def test_undated_stories_are_set_aside_not_guessed_into_place(corpus):
     """No fabricated position for a story the author has not placed."""
-    dated, undated = archive_order(corpus)
+    dated, undated = chronological_order(corpus)
     assert [s.slug for s in undated] == ["the-keeper"]
     assert all(s.occurs is not None for s in dated)
 
 
-def test_archive_excludes_drafts(corpus):
-    dated, undated = archive_order(corpus)
+def test_chronological_order_excludes_drafts(corpus):
+    dated, undated = chronological_order(corpus)
     assert "unfinished" not in {s.slug for s in (*dated, *undated)}
 
 

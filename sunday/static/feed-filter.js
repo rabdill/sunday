@@ -1,9 +1,9 @@
 /* Narrow the feed from a query string.
  *
  * The feed's HTML already contains every published story. This script only hides
- * the items that do not match, so with JavaScript unavailable the page is simply
- * the complete collection — never empty, never broken (FR-011b). Filtering is a
- * convenience; it is never the only route to a story (FR-021b).
+ * the entries that do not match, so with JavaScript unavailable the page is simply
+ * the complete collection — never empty, never broken. Filtering is a convenience;
+ * it is never the only route to a story.
  */
 (function () {
   "use strict";
@@ -31,19 +31,42 @@
     return filter.slug.replace(/-/g, " ");
   }
 
+  function all(selector) {
+    return Array.prototype.slice.call(document.querySelectorAll(selector));
+  }
+
+  /* A section whose every entry is filtered out loses its heading too. */
+  function showNonEmptySections() {
+    all("#feed .feed-section").forEach(function (section) {
+      section.hidden = section.querySelector(".feed-entry:not([hidden])") === null;
+    });
+  }
+
+  /* Switching order keeps the active filter. */
+  function syncSortLinks(filter) {
+    var query = filter ? "?" + filter.kind + "=" + encodeURIComponent(filter.slug) : "";
+    all(".sort a").forEach(function (link) {
+      if (!link.hasAttribute("data-base")) {
+        link.setAttribute("data-base", link.getAttribute("href"));
+      }
+      link.setAttribute("href", link.getAttribute("data-base") + query);
+    });
+  }
+
   function apply() {
     var filter = readFilter();
-    var items = Array.prototype.slice.call(
-      document.querySelectorAll("#feed .feed-item")
-    );
+    var items = all("#feed .feed-entry");
     var banner = document.getElementById("feed-filter-banner");
     var label = document.getElementById("feed-filter-label");
     var empty = document.getElementById("feed-filter-empty");
+
+    syncSortLinks(filter);
 
     if (!filter) {
       items.forEach(function (item) {
         item.hidden = false;
       });
+      showNonEmptySections();
       if (banner) banner.hidden = true;
       if (empty) empty.hidden = true;
       return;
@@ -55,6 +78,7 @@
       item.hidden = !match;
       if (match) matched++;
     });
+    showNonEmptySections();
 
     if (banner && label) {
       label.textContent = labelFor(items[0], filter);

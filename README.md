@@ -46,8 +46,8 @@ A story is one Markdown file with its metadata in frontmatter:
 ---
 slug: the-lighthouse          # permanent address; changing the title never changes it
 title: The Lighthouse
-published: 2026-08-04         # when you released it — orders the feed
-occurs: 1921-03               # when it happens in the fiction — orders the archive
+published: 2026-08-04         # when you released it — the feed's default order
+occurs: 1921-03               # when it happens in the fiction — the feed's chronological order
 characters: [Mara Vance, Elias Doyle]
 locations: [Portsmouth]
 tags: [epistolary]
@@ -66,16 +66,20 @@ the collection has never used. A name exists because a story names it.
 
 ## What gets published
 
-Four kinds of page, and nothing else:
+Three kinds of page, and nothing else:
 
-- **`/`** — the feed, newest first. Narrowable to one character via `?character=…`.
+- **The feed** — every published story, with a sort toggle between two orders:
+  - **`/`**: newest first, by `published`.
+  - **`/chronological/`**: in the fiction's own chronology, by `occurs`, with undated
+    stories set aside at the end.
+
+  Either order can be narrowed to one character via `?character=…`.
 - **`/network/`** — the diagram: characters and locations, and how they connect.
-- **`/archive/`** — every story in the fiction's own chronology.
 - **`/stories/<slug>/`** — one page per story, carrying only the story.
 
-Every story is reachable without JavaScript through the feed and the archive. The
-diagram and the feed filter are the only scripted features, and neither is the only way
-to reach anything.
+Each order is its own static page and the toggle is two plain links, so every story is
+reachable without JavaScript in either order. The diagram and the feed filter are the
+only scripted features, and neither is the only way to reach anything.
 
 ## What stays in the portal
 
@@ -149,7 +153,7 @@ pytest
 Coverage concentrates where silent corruption is possible: frontmatter parsing, name
 normalization, the connection graph, conflict detection, and the export boundary. Two
 structural guards assert the architecture rather than trusting it — that `build.py`
-never imports the store, and that the generated tree contains only the four page kinds.
+never imports the store, and that the generated tree contains only the three page kinds.
 
 ## Working on the code
 

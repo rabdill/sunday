@@ -1,4 +1,4 @@
-"""The generator: committed files in, four kinds of static page out.
+"""The generator: committed files in, three kinds of static page out.
 
 Never imports the store; deterministic by construction. See docs/DESIGN.md.
 """
@@ -93,17 +93,35 @@ def _slugs_for(corpus: Corpus, story: Story, kind: str) -> str:
     return " ".join(sorted(set(slugs)))
 
 
-def _feed_items(corpus: Corpus) -> list[dict[str, Any]]:
-    return [
-        {
-            "story": story,
-            "published_display": format_date(story.published),
-            "occurs_display": format_partial(story.occurs) if story.occurs else "",
-            "character_slugs": _slugs_for(corpus, story, "character"),
-            "location_slugs": _slugs_for(corpus, story, "location"),
-        }
-        for story in corpus.feed_order()
-    ]
+#: The feed's two orders: (key, sort-link label, path from the site root).
+FEED_ORDERS = (
+    ("published", "Newest first", ""),
+    ("chronological", "Story chronology", "chronological/"),
+)
+
+
+def _feed_entry(corpus: Corpus, story: Story, when: str) -> dict[str, Any]:
+    return {
+        "story": story,
+        "when": when,
+        "character_slugs": _slugs_for(corpus, story, "character"),
+        "location_slugs": _slugs_for(corpus, story, "location"),
+    }
+
+
+def _feed_sections(corpus: Corpus, order: str) -> list[dict[str, Any]]:
+    """The feed's non-empty sections, each a heading (or None) and its entries."""
+    if order == "published":
+        sections = [
+            (None, [_feed_entry(corpus, s, format_date(s.published)) for s in corpus.feed_order()])
+        ]
+    else:
+        dated, undated = graph_mod.chronological_order(corpus)
+        sections = [
+            (None, [_feed_entry(corpus, s, format_partial(s.occurs)) for s in dated]),
+            ("Undated", [_feed_entry(corpus, s, "—") for s in undated]),
+        ]
+    return [{"heading": h, "entries": entries} for h, entries in sections if entries]
 
 
 # ---------------------------------------------------------------------------- build
@@ -116,7 +134,7 @@ def build_site(
     cast_path: Path | str,
     output_dir: Path | str,
 ) -> BuildResult:
-    """Generate the complete published site: feed, network, archive, and story pages."""
+    """Generate the complete published site: feed (in each order), network, and story pages."""
     stories_dir = Path(stories_dir)
     output_dir = Path(output_dir)
 
@@ -132,14 +150,25 @@ def build_site(
 
     common = {"site_title": settings.title}
 
-    # -- the feed -----------------------------------------------------------------
-    _write(
-        output_dir / "index.html",
-        env.get_template("site/index.html").render(
-            root="", home="./", items=_feed_items(corpus), **common
-        ),
-    )
-    pages += 1
+    # -- the feed, once per order ----------------------------------------------------
+    feed_template = env.get_template("site/index.html")
+    for order, _label, path in FEED_ORDERS:
+        root = "../" * path.count("/")
+        _write(
+            output_dir / path / "index.html",
+            feed_template.render(
+                root=root,
+                home=root or "./",
+                order=order,
+                orders=[
+                    {"key": key, "label": label, "href": (root + p) or "./"}
+                    for key, label, p in FEED_ORDERS
+                ],
+                sections=_feed_sections(corpus, order),
+                **common,
+            ),
+        )
+        pages += 1
 
     # -- one page per published story ---------------------------------------------
     story_template = env.get_template("site/story.html")
@@ -157,25 +186,6 @@ def build_site(
             ),
         )
         pages += 1
-
-    # -- the archive, in the fiction's own chronology ------------------------------
-    dated, undated = graph_mod.archive_order(corpus)
-    _write(
-        output_dir / "archive" / "index.html",
-        env.get_template("site/archive.html").render(
-            root="../",
-            home="../",
-            dated=[
-                {"story": s, "when": format_partial(s.occurs), "published_display": format_date(s.published)}
-                for s in dated
-            ],
-            undated=[
-                {"story": s, "published_display": format_date(s.published)} for s in undated
-            ],
-            **common,
-        ),
-    )
-    pages += 1
 
     # -- the network diagram, and the data behind it -------------------------------
     connection_graph = graph_mod.build_graph(corpus, cast)
